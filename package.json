@@ -1,0 +1,46 @@
+{
+  "name": "pauta",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT OR Apache-2.0",
+  "scripts": {
+    "dev": "vite --config ui/vite.config.ts",
+    "build": "vite build --config ui/vite.config.ts",
+    "check": "svelte-check --tsconfig ui/tsconfig.json",
+    "test": "vitest run --config ui/vite.config.ts",
+    "tauri": "tauri",
+    "test:a11y": "node ui/e2e/screens.mjs",
+    "lint": "eslint ui eslint.config.js",
+    "test:browser": "node ui/e2e/autosave.mjs && node ui/e2e/screens.mjs",
+    "test:e2e": "node ui/e2e/tauri.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tauri-apps/cli": "^2",
+    "@tsconfig/svelte": "^5.0.8",
+    "axe-core": "^4.14.0",
+    "eslint": "^9",
+    "eslint-plugin-svelte": "^3.23.1",
+    "globals": "^17.13.0",
+    "playwright-core": "^1",
+    "selenium-webdriver": "^4.51.0",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.7",
+    "svelte-eslint-parser": "^1.10.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-autostart": "^2",
+    "@tauri-apps/plugin-clipboard-manager": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "dompurify": "^3.4.17",
+    "marked": "^18.1.2"
+  }
+}

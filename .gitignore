@@ -1,0 +1,7 @@
+/target
+node_modules/
+/ui/dist
+.pauta/
+*.tmp-*
+/crates/pauta-app/gen
+/.superpowers/

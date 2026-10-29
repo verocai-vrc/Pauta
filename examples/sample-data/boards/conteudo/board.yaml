@@ -1,0 +1,11 @@
+schema_version: 1
+id: conteudo
+name: "Conteúdo"
+kind: content            # content | project | generic
+color: "#7a2e3b"
+columns:
+  - { id: idea,      name: "Ideia", role: inbox }
+  - { id: draft,     name: "Rascunho" }
+  - { id: producing, name: "Produção" }
+  - { id: scheduled, name: "Agendado", role: scheduled }
+  - { id: published, name: "Publicado", role: done }

@@ -1,0 +1,17 @@
+[package]
+name = "pauta-cli"
+description = "Minimal debugging command line for a Pauta data folder"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "pauta-cli"
+path = "src/main.rs"
+
+[dependencies]
+pauta-core.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+anyhow.workspace = true

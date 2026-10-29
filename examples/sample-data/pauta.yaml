@@ -1,0 +1,27 @@
+schema_version: 1
+timezone: America/Recife
+language: pt-BR
+board_order: [conteudo, dungeon-meister]
+networks:
+  linkedin:
+    label: "LinkedIn"
+    url: "https://www.linkedin.com/feed/"
+    char_limit: 3000
+    slots:                       # faixas de postagem (seção 9.1)
+      - { days: [tue, thu], time: "09:00" }
+    cadence_goal: { posts: 2, per: week }
+  instagram:
+    label: "Instagram"
+    url: "https://www.instagram.com/"
+    char_limit: 2200
+    slots:
+      - { days: [wed, sat], time: "19:00" }
+    cadence_goal: { posts: 2, per: week }
+reminders:
+  post_default: ["-1h", "0"]     # antecedência e hora exata
+  deadline_default: ["-7d", "-1d", "09:00"]
+notifications:
+  quiet_hours: { from: "23:00", to: "07:00" }
+rhythm:
+  empty_queue_days: 7
+  stale_after_days: 14

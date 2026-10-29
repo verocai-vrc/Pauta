@@ -1,0 +1,23 @@
+[package]
+name = "pauta-core"
+description = "Data model, file storage and scheduling rules shared by the Pauta app and MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+serde_yaml_ng.workspace = true
+jiff.workspace = true
+thiserror.workspace = true
+ulid.workspace = true
+blake3.workspace = true
+tempfile.workspace = true
+pulldown-cmark = { version = "0.13", default-features = false }
+csv = "1"
+
+[dev-dependencies]
+proptest = "1"
+ical = "0.11"

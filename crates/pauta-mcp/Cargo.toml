@@ -1,0 +1,22 @@
+[package]
+name = "pauta-mcp"
+description = "MCP server (stdio) that lets Claude read and operate Pauta"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+pauta-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jiff.workspace = true
+anyhow.workspace = true
+rmcp = { version = "3.8", features = ["server", "transport-io", "macros"] }
+schemars = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "io-std"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+rmcp = { version = "3.8", features = ["client", "transport-child-process"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }

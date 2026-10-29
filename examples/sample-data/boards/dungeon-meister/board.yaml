@@ -1,0 +1,11 @@
+schema_version: 1
+id: dungeon-meister
+name: "Dungeon Meister"
+kind: project
+color: "#2e5a7a"
+columns:
+  - { id: backlog, name: "Backlog", role: inbox }
+  - { id: todo, name: "A fazer" }
+  - { id: doing, name: "Fazendo", limit: 2 }
+  - { id: review, name: "Revisão" }
+  - { id: done, name: "Concluído", role: done }

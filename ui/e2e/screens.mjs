@@ -4,7 +4,7 @@
 //   pnpm build && pnpm test:a11y            # fails on any violation
 //   SHOTS=/some/dir pnpm test:a11y          # also keeps the screenshots
 import { audit, finish, newPage, problems } from "./harness.mjs";
-import { emptyHome, fullHome } from "./home-fixtures.mjs";
+import { emptyHome, fullHome, typicalHome } from "./home-fixtures.mjs";
 
 // The fixtures only have a finished post, so this fills every section of Today, with titles long
 // enough to wrap. Runs in the browser as an init script.
@@ -40,6 +40,7 @@ const openHoje = async (p) => {
 
 const screens = [
   ["home", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }],
+  ["home-typical", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }, typicalHome],
   ["home-full", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }, fullHome],
   ["home-empty", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }, emptyHome],
   ["calendar-today", async (p) => { await openHoje(p); await p.waitForSelector("text=Seu ritmo"); }],

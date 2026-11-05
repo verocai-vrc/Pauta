@@ -2,18 +2,16 @@
   // "Before posting": what is still missing, in plain words.
   import type { Problem } from "../lib/api";
   import { t } from "../lib/i18n";
+  import { problemText } from "../lib/readiness";
   import Icon from "./Icon.svelte";
 
   let { problems }: { problems: Problem[] } = $props();
-
-  const text = (p: Problem) =>
-    p.code === "art_pending" ? t(`ready.art_pending_${p.detail === "files_present" ? "files" : "waiting"}`) : t(`ready.${p.code}`, { n: p.detail ?? "" });
 </script>
 
 {#if problems.length}
   <ul class="problems" aria-label={t("ready.title")}>
     {#each problems as p (p.code)}
-      <li><Icon name="triangle-alert" size={14} /> {text(p)}</li>
+      <li><Icon name="triangle-alert" size={14} /> {problemText(p)}</li>
     {/each}
   </ul>
 {/if}

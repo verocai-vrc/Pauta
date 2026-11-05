@@ -1,8 +1,10 @@
 // End-to-end test of the real app through tauri-driver (WebKitWebDriver), section 15.3.
 //
 // Needs: `cargo install tauri-driver --locked`, the `webkit2gtk-driver` package, a display
-// (xvfb-run) and a debug build (`pnpm build && cargo build -p pauta-app`), because only debug
-// builds honor PAUTA_NOW. Run: `xvfb-run -a pnpm test:e2e`.
+// (xvfb-run) and `pnpm tauri build --debug --no-bundle`. It has to be a debug build, because only
+// those honor PAUTA_NOW, and not a plain `cargo build`, whose binary loads devUrl instead of the
+// embedded UI and fails with "Callback was not called before the unload event".
+// Run: `xvfb-run -a pnpm test:e2e`.
 //
 // Mouse drag-and-drop is not covered: WebKitWebDriver does not synthesize HTML5 drag events.
 // The keyboard equivalent is, and drag-and-drop is covered by hand and in the browser harness.
@@ -14,7 +16,7 @@ import { Builder, By, Key, until } from "selenium-webdriver";
 
 const repo = path.resolve(import.meta.dirname, "../..");
 const app = path.join(repo, "target/debug/pauta");
-if (!fs.existsSync(app)) throw new Error("Build the app first: cargo build -p pauta-app");
+if (!fs.existsSync(app)) throw new Error("Build the app first: pnpm tauri build --debug --no-bundle");
 
 // A throwaway data folder and config dir: the test never touches the real ones.
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pauta-e2e-"));

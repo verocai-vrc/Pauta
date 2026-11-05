@@ -339,8 +339,11 @@
     font-weight: 600;
   }
 
+  /* One line: a short block would otherwise cut a second line in half. The full title is in the tooltip. */
   .txt {
+    min-width: 0;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
   }
 </style>

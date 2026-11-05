@@ -124,6 +124,23 @@ const clipped = await check.evaluate(() =>
   [...document.querySelectorAll("nav button")].filter((b) => b.scrollWidth > b.clientWidth).map((b) => b.textContent),
 );
 if (clipped.length) problems.push(`sidebar text does not fit: ${clipped}`);
+// WebKit sets this text wider than Chromium, so widen it here: the label stays whole and the
+// shortcut is what moves to a second line inside the button.
+const capture = await check.evaluate(() => {
+  const button = document.querySelector("nav .capture");
+  const label = button.querySelector(".label");
+  label.style.letterSpacing = "1.5px";
+  const range = document.createRange();
+  range.selectNodeContents(label);
+  const lines = new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+  const kbd = button.querySelector("kbd").getBoundingClientRect();
+  const box = button.getBoundingClientRect();
+  const out = { lines, inside: kbd.right <= box.right + 0.5 && kbd.bottom <= box.bottom + 0.5 };
+  label.style.letterSpacing = "";
+  return out;
+});
+if (capture.lines !== 1) problems.push(`capture label breaks into ${capture.lines} lines`);
+if (!capture.inside) problems.push("capture shortcut falls outside the button");
 for (const [key, label] of [["1", "Hoje"], ["2", "Quadros"], ["3", "Calendário"], ["4", "Ritmo"], ["5", "Configurações"]]) {
   await check.keyboard.press(`Alt+${key}`);
   const current = await check.locator('nav [aria-current="page"]').textContent();
@@ -202,6 +219,27 @@ for (const width of [1360, 720]) {
   problems.push(...week.out.map((o) => `calendar week at ${width}px: done item: ${o}`));
 }
 await overlap.close();
+
+// A timed post with a long title: a short block must never show a line of text cut in half.
+const timed = await newPage("light", {
+  init: () => {
+    const when = { date: "2026-10-28", time: "09:00:00", at: "2026-10-28T09:00:00Z" };
+    const post = { kind: "publication", id: "a", board: "conteudo", title: "Um título longo que certamente não cabe na largura de um dia", when, end: null, network: "linkedin", status: "scheduled", column: null, done: false };
+    window.__override = (cmd) => (cmd === "get_agenda" ? [post] : undefined);
+  },
+});
+await timed.keyboard.press("Alt+3");
+await timed.click("button:has-text('Semana')");
+await timed.waitForSelector(".week .col .item");
+const sliced = await timed.evaluate(() => {
+  const item = document.querySelector(".week .col .item");
+  const bottom = item.getBoundingClientRect().bottom;
+  const range = document.createRange();
+  range.selectNodeContents(item.querySelector(".txt"));
+  return [...range.getClientRects()].filter((r) => r.bottom > bottom + 0.5).length;
+});
+if (sliced) problems.push(`calendar week: ${sliced} line(s) of a title cut by the block's edge`);
+await timed.close();
 
 const narrow = await newPage("light", { init: fullToday });
 await narrow.setViewportSize({ width: 720, height: 900 });

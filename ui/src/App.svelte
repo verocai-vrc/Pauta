@@ -236,10 +236,16 @@
 
   /* Capture is the one primary action of the shell. */
   .nav-item.capture {
+    flex-wrap: wrap;
     margin-top: var(--sp-1);
     background: var(--accent);
     color: var(--accent-text);
     font-weight: 600;
+  }
+
+  /* If both do not fit, the shortcut moves to a second line and the label stays whole. */
+  .capture .label {
+    white-space: nowrap;
   }
 
   .nav-item.capture:hover {

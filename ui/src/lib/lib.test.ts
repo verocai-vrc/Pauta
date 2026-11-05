@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { addDays, addMonths, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
+import { addDays, addMonths, longDate, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
+import type { AgendaItem, Today } from "./api";
+import { todaySummary } from "./summary";
 import { charCount, postText, toggleTask } from "./markdown";
 
 describe("dates", () => {
@@ -28,9 +30,47 @@ describe("dates", () => {
     expect(relativeDay("2026-11-04", "2026-10-28")).toBe("qua, 4 nov");
   });
 
+  it("long date spells out the weekday and the month", () => {
+    expect(longDate("2026-10-28")).toBe("Quarta-feira, 28 de outubro");
+    expect(longDate("2026-11-01")).toBe("Domingo, 1 de novembro");
+  });
+
   it("rescheduling keeps the time of day", () => {
     expect(moveToDay({ date: "2026-11-03", time: "09:00:00", at: "x" }, "2026-11-05")).toBe("2026-11-05T09:00");
     expect(moveToDay({ date: "2026-12-05", time: null, at: null }, "2026-12-06")).toBe("2026-12-06");
+  });
+});
+
+describe("today summary", () => {
+  const item = (id: string, done = false) => ({ id, done }) as unknown as AgendaItem;
+  const make = (posts: AgendaItem[], overdue: number, upcoming: number) =>
+    ({
+      posts,
+      overdue: Array.from({ length: overdue }, (_, i) => item(`o${i}`)),
+      upcoming: Array.from({ length: upcoming }, (_, i) => item(`u${i}`)),
+    }) as unknown as Today;
+
+  it("joins the three counts", () => {
+    expect(todaySummary(make([item("a")], 1, 3))).toBe(
+      "Um post para publicar, um item atrasado e três compromissos nos próximos 7 dias.",
+    );
+  });
+
+  it("uses plurals and digits past ten", () => {
+    expect(todaySummary(make([item("a"), item("b")], 2, 12))).toBe(
+      "Dois posts para publicar, dois itens atrasados e 12 compromissos nos próximos 7 dias.",
+    );
+  });
+
+  it("leaves out zero counts and posts already done", () => {
+    expect(todaySummary(make([item("a", true), item("b")], 0, 2))).toBe(
+      "Um post para publicar e dois compromissos nos próximos 7 dias.",
+    );
+    expect(todaySummary(make([], 3, 0))).toBe("Três itens atrasados.");
+  });
+
+  it("says so when nothing is pending", () => {
+    expect(todaySummary(make([item("a", true)], 0, 0))).toBe("Nada pendente por aqui.");
   });
 });
 

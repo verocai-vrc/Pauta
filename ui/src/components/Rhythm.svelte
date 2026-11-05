@@ -4,6 +4,7 @@
   import { t } from "../lib/i18n";
   import { app, fail, networkLabel, openItem } from "../lib/store.svelte";
   import CadenceMeter from "./CadenceMeter.svelte";
+  import Icon from "./Icon.svelte";
   import MetricsImport from "./MetricsImport.svelte";
   import StackedBars from "./StackedBars.svelte";
 
@@ -21,13 +22,13 @@
 
 <div class="rhythm">
   <header>
-    <h1>{t("rhythm.title")}</h1>
+    <h1 class="display">{t("rhythm.title")}</h1>
     <p class="muted">{t("rhythm.intro")}</p>
   </header>
 
   {#if data}
-    <section class="panel" aria-labelledby="goals">
-      <h2 id="goals">{t("rhythm.goals")}</h2>
+    <section aria-labelledby="goals">
+      <h2 id="goals" class="rule-heading">{t("rhythm.goals")}</h2>
       {#if data.cadence.length === 0}
         <p class="muted">{t("rhythm.no_goals")}</p>
       {:else}
@@ -37,8 +38,8 @@
       {/if}
     </section>
 
-    <section class="panel" aria-labelledby="weekly">
-      <h2 id="weekly">{t("rhythm.weekly")}</h2>
+    <section aria-labelledby="weekly">
+      <h2 id="weekly" class="rule-heading">{t("rhythm.weekly")}</h2>
       <StackedBars
         buckets={data.history.weeks}
         {networks}
@@ -47,8 +48,8 @@
       />
     </section>
 
-    <section class="panel" aria-labelledby="monthly">
-      <h2 id="monthly">{t("rhythm.monthly")}</h2>
+    <section aria-labelledby="monthly">
+      <h2 id="monthly" class="rule-heading">{t("rhythm.monthly")}</h2>
       <StackedBars
         buckets={data.history.months}
         {networks}
@@ -57,8 +58,8 @@
       />
     </section>
 
-    <section class="panel" aria-labelledby="results">
-      <div class="head">
+    <section aria-labelledby="results">
+      <div class="head rule-heading">
         <h2 id="results">{t("insights.title")}</h2>
         <button onclick={() => (importing = true)}>{t("import.open")}</button>
       </div>
@@ -109,8 +110,8 @@
       {/if}
     </section>
 
-    <section class="panel" aria-labelledby="recent">
-      <h2 id="recent">{t("rhythm.recent")} <span class="muted small">· {t("rhythm.total_all", { n: data.history.total_posts })}</span></h2>
+    <section aria-labelledby="recent">
+      <h2 id="recent" class="rule-heading">{t("rhythm.recent")} <span class="muted small">· {t("rhythm.total_all", { n: data.history.total_posts })}</span></h2>
       {#if data.recent.length === 0}
         <p class="muted">{t("rhythm.none_yet")}</p>
       {:else}
@@ -124,7 +125,7 @@
               {:else}
                 <button class="ghost" onclick={() => openItem("card", p.id)}>{p.title}</button>
               {/if}
-              {#if p.url}<button class="ghost small" onclick={() => api.openUrl(p.url!).catch(fail)}>↗ {t("rhythm.open_post")}</button>{/if}
+              {#if p.url}<button class="ghost small with-icon" onclick={() => api.openUrl(p.url!).catch(fail)}><Icon name="external-link" size={14} />{t("rhythm.open_post")}</button>{/if}
             </li>
           {/each}
         </ul>
@@ -146,13 +147,15 @@
   }
 
   header p {
-    margin: var(--sp-1) 0 0;
+    margin: var(--sp-2) 0 0;
   }
 
+  /* Sections on the ruled paper: a heading over a hairline, no boxes. */
   section {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+    margin-top: var(--sp-3);
   }
 
   .head {
@@ -161,6 +164,12 @@
     justify-content: space-between;
     gap: var(--sp-3);
     flex-wrap: wrap;
+  }
+
+  .with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
   }
 
   .meters {

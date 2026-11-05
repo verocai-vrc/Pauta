@@ -55,6 +55,13 @@ try {
   await step("starts on Today with the sample data", async () => {
     await $("nav");
     await driver.wait(until.elementLocated(By.xpath('//h1[normalize-space()="Hoje"]')), 10000);
+    // Under the real CSP, which the browser checks do not have.
+    const fonts = await driver.executeAsyncScript((done) =>
+      document.fonts.ready.then(() => done([...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family))),
+    );
+    for (const f of ["Fraunces Variable", "Source Sans 3 Variable"]) {
+      if (!fonts.some((l) => l.includes(f))) throw new Error(`font not loaded: ${f}`);
+    }
   });
 
   await step("creates a card from the quick-add box", async () => {

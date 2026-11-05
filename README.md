@@ -65,6 +65,12 @@ xvfb-run -a pnpm test:e2e         # app real via tauri-driver (precisa de webkit
 cargo run -p pauta-cli -- --root examples/sample-data boards
 ```
 
+## Identidade visual
+
+O Pauta segue a identidade do **Caderno editorial**: papel, pauta, margem de caderno e títulos com serifa (o nome vem de "papel pautado"). Os valores ficam nos tokens de `ui/src/app.css`, em claro e em Grafite, e a decisão está em `docs/superpowers/specs/2026-11-05-redesenho-caderno-design.md`.
+
+Os ícones são do [Lucide](https://lucide.dev) (ISC), copiados em `ui/src/components/Icon.svelte` com o aviso da licença. As fontes são Fraunces (títulos) e Source Sans 3 (interface), ambas OFL-1.1, empacotadas pelos pacotes `@fontsource-variable` para o app rodar sem rede.
+
 ## Estado
 
 A versão 0 (marcos 0 a 5 do documento de design) está pronta e foi revisada pelo autor, incluindo o uso real do conector MCP a partir do Claude Code. O marco 6 e os pendentes da versão 0 foram feitos em seguida:

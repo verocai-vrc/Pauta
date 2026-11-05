@@ -21,13 +21,15 @@
   <div class="chart" aria-hidden="true">
     {#each buckets as b (b.start)}
       <div class="col" title={`${label(b)}: ${b.total}`}>
-        <span class="n small">{b.total || ""}</span>
-        <div class="stack" style:height={`${(b.total / max) * 100}%`}>
-          {#each networks as n (n)}
-            {#if b.counts[n]}
-              <div class="seg" style:flex={b.counts[n]} style:background={color(n)}></div>
-            {/if}
-          {/each}
+        <div class="plot">
+          <span class="n small">{b.total || ""}</span>
+          <div class="stack" style:height={`calc((100% - var(--n-h)) * ${b.total / max})`}>
+            {#each networks as n (n)}
+              {#if b.counts[n]}
+                <div class="seg" style:flex={b.counts[n]} style:background={color(n)}></div>
+              {/if}
+            {/each}
+          </div>
         </div>
         <span class="lbl small muted">{label(b)}</span>
       </div>
@@ -71,15 +73,27 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
     align-items: center;
     gap: 2px;
+  }
+
+  /* The bars get the height left after the label, so a tall bar can no longer squeeze the label. */
+  .plot {
+    --n-h: 1.4em;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
   }
 
   .stack {
     width: 100%;
     max-width: 34px;
     min-height: 2px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column-reverse;
     border-radius: 3px 3px 0 0;
@@ -93,12 +107,15 @@
 
   .n {
     font-variant-numeric: tabular-nums;
-    min-height: 1.2em;
+    height: var(--n-h);
+    line-height: var(--n-h);
+    flex-shrink: 0;
   }
 
   .lbl {
     font-size: var(--fs-xs);
     line-height: 1.5;
+    flex-shrink: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

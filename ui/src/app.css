@@ -1,12 +1,14 @@
 /* Design tokens (section 12.5): a redesign is a change of values, not a rewrite. */
 :root {
-  --font-ui: system-ui, -apple-system, "Segoe UI", "Ubuntu", "Cantarell", sans-serif;
+  --font-ui: "Source Sans 3 Variable", system-ui, -apple-system, "Segoe UI", "Ubuntu", "Cantarell", sans-serif;
+  --font-serif: "Fraunces Variable", Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, "Ubuntu Mono", "DejaVu Sans Mono", monospace;
   --fs-xs: 0.75rem;
   --fs-sm: 0.8125rem;
   --fs-md: 0.875rem;
   --fs-lg: 1.0625rem;
   --fs-xl: 1.375rem;
+  --fs-display: 2.375rem;
 
   --sp-1: 4px;
   --sp-2: 8px;
@@ -15,89 +17,111 @@
   --sp-5: 24px;
   --sp-6: 32px;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
 
-  --bg: #f6f4f2;
+  --bg: #faf7f2;
+  --sidebar: #f3eee6;
   --surface: #ffffff;
-  --surface-2: #efebe8;
-  --surface-3: #e5e0dc;
-  --border: #d9d2cd;
-  --text: #221c1a;
-  --text-muted: #6b625e;
+  --surface-2: #f3eee6;
+  --surface-3: #e9e2d6;
+  --border: #e6ddd0;
+  --rule: #efe8dd;
+  --margin-line: rgb(122 46 59 / 0.3);
+  --head-rule: #2a211d;
+  --text: #2a211d;
+  --text-muted: #6f6156;
   --accent: #7a2e3b;
   --accent-text: #ffffff;
-  --accent-soft: #f2e1e4;
+  --accent-soft: #f3e3e5;
   --focus: #1d5fd1;
-  --danger: #b3261e;
-  --danger-soft: #fbe3e1;
-  --warning: #8a5a00;
-  --warning-soft: #fdf0d5;
+  --danger: #a3271f;
+  --danger-soft: #f9e4e1;
+  --danger-text: #ffffff;
+  --warning: #7d5100;
+  --warning-soft: #fbf1dc;
   --ok: #2e6b3a;
-  --ok-soft: #e1f2e4;
+  --ok-soft: #e3f0e2;
 
-  --c-linkedin: #0a66c2;
-  --c-instagram: #b1307a;
-  --c-due: #8a5a00;
+  --c-linkedin: #0a5fb4;
+  --c-instagram: #a82a72;
+  --c-due: #7d5100;
   --c-event: #2e5a7a;
 
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.08);
+  --scrim: rgb(0 0 0 / 0.35);
+  --shadow-1: 0 1px 0 var(--border), 0 2px 6px rgb(60 40 20 / 0.05);
   --shadow-2: 0 8px 28px rgb(0 0 0 / 0.18);
   --dur: 140ms;
+  /* The notebook paper. A token so the accessibility audit can switch it off. */
+  --ruling: repeating-linear-gradient(transparent 0 31px, var(--rule) 31px 32px);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #171413;
-    --surface: #211d1c;
-    --surface-2: #2a2524;
-    --surface-3: #342e2c;
-    --border: #3d3634;
-    --text: #efe9e6;
-    --text-muted: #a99f9a;
-    --accent: #d77a8a;
-    --accent-text: #1a0d10;
-    --accent-soft: #3b2328;
+    --bg: #18191b;
+    --sidebar: #121315;
+    --surface: #222326;
+    --surface-2: #2a2b2f;
+    --surface-3: #35373b;
+    --border: #35373b;
+    --rule: #1f2023;
+    --margin-line: rgb(227 144 156 / 0.26);
+    --head-rule: #c4c4c0;
+    --text: #ececea;
+    --text-muted: #a6a6a2;
+    --accent: #e3909c;
+    --accent-text: #22100f;
+    --accent-soft: #3a2629;
     --focus: #7fb0ff;
-    --danger: #ff8a80;
-    --danger-soft: #3d1f1d;
-    --warning: #f0c060;
-    --warning-soft: #3a2f17;
-    --ok: #8fd19e;
-    --ok-soft: #1f3324;
-    --c-linkedin: #5aa2ea;
-    --c-instagram: #e57ab8;
-    --c-due: #f0c060;
+    --danger: #ff9a8f;
+    --danger-soft: #3b2220;
+    --danger-text: #2a0f0c;
+    --warning: #f0c26a;
+    --warning-soft: #33291a;
+    --ok: #95cf9f;
+    --ok-soft: #1f2e22;
+    --c-linkedin: #6aaef0;
+    --c-instagram: #ec86c0;
+    --c-due: #f0c26a;
     --c-event: #7fb3d5;
+    --scrim: rgb(0 0 0 / 0.55);
+    --shadow-1: 0 1px 0 #0d0e0f, 0 2px 8px rgb(0 0 0 / 0.3);
     --shadow-2: 0 8px 28px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #171413;
-  --surface: #211d1c;
-  --surface-2: #2a2524;
-  --surface-3: #342e2c;
-  --border: #3d3634;
-  --text: #efe9e6;
-  --text-muted: #a99f9a;
-  --accent: #d77a8a;
-  --accent-text: #1a0d10;
-  --accent-soft: #3b2328;
+  --bg: #18191b;
+  --sidebar: #121315;
+  --surface: #222326;
+  --surface-2: #2a2b2f;
+  --surface-3: #35373b;
+  --border: #35373b;
+  --rule: #1f2023;
+  --margin-line: rgb(227 144 156 / 0.26);
+  --head-rule: #c4c4c0;
+  --text: #ececea;
+  --text-muted: #a6a6a2;
+  --accent: #e3909c;
+  --accent-text: #22100f;
+  --accent-soft: #3a2629;
   --focus: #7fb0ff;
-  --danger: #ff8a80;
-  --danger-soft: #3d1f1d;
-  --warning: #f0c060;
-  --warning-soft: #3a2f17;
-  --ok: #8fd19e;
-  --ok-soft: #1f3324;
-  --c-linkedin: #5aa2ea;
-  --c-instagram: #e57ab8;
-  --c-due: #f0c060;
+  --danger: #ff9a8f;
+  --danger-soft: #3b2220;
+  --danger-text: #2a0f0c;
+  --warning: #f0c26a;
+  --warning-soft: #33291a;
+  --ok: #95cf9f;
+  --ok-soft: #1f2e22;
+  --c-linkedin: #6aaef0;
+  --c-instagram: #ec86c0;
+  --c-due: #f0c26a;
   --c-event: #7fb3d5;
+  --scrim: rgb(0 0 0 / 0.55);
+  --shadow-1: 0 1px 0 #0d0e0f, 0 2px 8px rgb(0 0 0 / 0.3);
   --shadow-2: 0 8px 28px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
@@ -131,6 +155,8 @@ h1,
 h2,
 h3 {
   margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
   line-height: 1.25;
 }
 
@@ -254,19 +280,26 @@ label.field > :is(input, select, textarea) {
   align-items: center;
   gap: 4px;
   font-size: var(--fs-xs);
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--surface-2);
   color: var(--text-muted);
   white-space: nowrap;
 }
 
 .chip.linkedin {
   color: var(--c-linkedin);
+  font-weight: 600;
 }
 
 .chip.instagram {
   color: var(--c-instagram);
+  font-weight: 600;
+}
+
+/* Only chips that carry state keep a pill. */
+.chip.warn,
+.chip.danger,
+.chip.ok {
+  padding: 1px 7px;
+  border-radius: 999px;
 }
 
 .chip.warn {
@@ -334,4 +367,53 @@ label.field > :is(input, select, textarea) {
 
 .markdown a {
   color: var(--accent);
+}
+
+/* ---- Caderno: pieces shared by several screens ---- */
+
+/* The notebook paper, on reading screens. `local` keeps the ruling with the content as it scrolls. */
+.paper {
+  background-image: var(--ruling);
+  background-attachment: local;
+}
+
+.display {
+  font-size: var(--fs-display);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.kicker {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dek {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-lg);
+  color: var(--text-muted);
+}
+
+/* Small caps label over a dark rule: Today's sections and the board columns. */
+.section-label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1.5px solid var(--head-rule);
+  padding-bottom: 5px;
+}
+
+/* A serif heading over a hairline: sections that used to be boxes. */
+.rule-heading {
+  font-size: var(--fs-lg);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--sp-1);
 }

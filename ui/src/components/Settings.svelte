@@ -5,6 +5,7 @@
   import { WEEKDAYS_SHORT } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { app, fail, reload, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
 
   const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   const cfg = app.index!.config;
@@ -112,21 +113,21 @@
 </script>
 
 <div class="settings">
-  <h1>{t("settings.title")}</h1>
+  <h1 class="display">{t("settings.title")}</h1>
 
-  <section class="panel">
-    <h2>{t("settings.data")}</h2>
+  <section>
+    <h2 class="rule-heading">{t("settings.data")}</h2>
     <div class="row">
       <code>{app.status?.root}</code>
-      <button onclick={() => app.status?.root && api.openPath(app.status.root).catch(fail)}>🗀 {t("settings.open_folder")}</button>
+      <button class="with-icon" onclick={() => app.status?.root && api.openPath(app.status.root).catch(fail)}><Icon name="folder" />{t("settings.open_folder")}</button>
       <button onclick={changeFolder}>{t("settings.change_folder")}</button>
-      <button onclick={() => (app.trashOpen = true)}>🗑 {t("trash.title")}</button>
+      <button class="with-icon" onclick={() => (app.trashOpen = true)}><Icon name="trash-2" />{t("trash.title")}</button>
     </div>
     <p class="small muted">{t("settings.data_hint")}</p>
   </section>
 
-  <form class="panel form" onsubmit={save}>
-    <h2>{t("settings.schedule")}</h2>
+  <form class="form" onsubmit={save}>
+    <h2 class="rule-heading">{t("settings.schedule")}</h2>
     <label class="field narrow">
       {t("settings.timezone")}
       <input type="text" bind:value={timezone} />
@@ -172,10 +173,10 @@
               {/each}
             </div>
             <input type="time" bind:value={slot.time} aria-label={t("settings.slot_time")} />
-            <button type="button" class="ghost danger" aria-label={t("settings.slot_remove")} onclick={() => n.slots.splice(si, 1)}>✕</button>
+            <button type="button" class="ghost danger" aria-label={t("settings.slot_remove")} onclick={() => n.slots.splice(si, 1)}><Icon name="x" /></button>
           </div>
         {/each}
-        <button type="button" onclick={() => n.slots.push({ days: ["tue"], time: "09:00" })}>＋ {t("settings.slot_add")}</button>
+        <button type="button" class="with-icon" onclick={() => n.slots.push({ days: ["tue"], time: "09:00" })}><Icon name="plus" />{t("settings.slot_add")}</button>
       </fieldset>
     {/each}
 
@@ -212,18 +213,18 @@
     <div><button class="primary" type="submit">{t("common.save")}</button></div>
   </form>
 
-  <section class="panel form">
-    <h2>{t("settings.ics")}</h2>
+  <section class="form">
+    <h2 class="rule-heading">{t("settings.ics")}</h2>
     <p class="small muted">{t("settings.ics_hint")}</p>
     <div class="row">
       <label class="row small"><input type="checkbox" bind:checked={icsAll} /> {t("settings.ics_all")}</label>
-      <button onclick={exportIcs}>⇩ {t("settings.ics_export")}</button>
+      <button class="with-icon" onclick={exportIcs}><Icon name="download" />{t("settings.ics_export")}</button>
     </div>
   </section>
 
   {#if prefs}
-    <section class="panel form">
-      <h2>{t("settings.app")}</h2>
+    <section class="form">
+      <h2 class="rule-heading">{t("settings.app")}</h2>
       <label class="row"><input type="checkbox" checked={prefs.autostart} onchange={(e) => setPref("autostart", e.currentTarget.checked)} /> {t("settings.autostart")}</label>
       <label class="row"><input type="checkbox" checked={prefs.close_to_tray} onchange={(e) => setPref("close_to_tray", e.currentTarget.checked)} /> {t("settings.close_to_tray")}</label>
       <label class="field narrow">
@@ -235,8 +236,8 @@
     </section>
   {/if}
 
-  <section class="panel form">
-    <h2>{t("settings.mcp")}</h2>
+  <section class="form">
+    <h2 class="rule-heading">{t("settings.mcp")}</h2>
     <p class="small muted">{t("settings.mcp_intro")}</p>
     {#if mcp}
       {#if !mcp.binary_exists}<p class="chip warn">{t("settings.mcp_missing", { path: mcp.binary })}</p>{/if}
@@ -248,8 +249,8 @@
     {/if}
   </section>
 
-  <section class="panel">
-    <h2>{t("settings.shortcuts")}</h2>
+  <section>
+    <h2 class="rule-heading">{t("settings.shortcuts")}</h2>
     <dl>
       <dt>Ctrl+K</dt><dd>{t("settings.sc_palette")}</dd>
       <dt>Alt+1…5</dt><dd>{t("settings.sc_views")}</dd>
@@ -271,13 +272,23 @@
     gap: var(--sp-4);
   }
 
+  /* Sections on the ruled paper: a heading over a hairline, no boxes. */
+  section,
   .form {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+    margin-top: var(--sp-3);
+  }
+
+  .with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
   }
 
   fieldset {
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     display: flex;

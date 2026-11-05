@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { api, type AgendaItem } from "../lib/api";
-  import { relativeDay, whenLabel, hm } from "../lib/dates";
+  import { api, type AgendaItem, type When } from "../lib/api";
+  import { hm, longDate, relativeDay } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
+  import { todaySummary } from "../lib/summary";
   import CadenceMeter from "./CadenceMeter.svelte";
+  import Icon from "./Icon.svelte";
   import PostActions from "./PostActions.svelte";
   import Problems from "./Problems.svelte";
 
@@ -21,15 +23,32 @@
   }
 </script>
 
+{#snippet when(w: When, late = false)}
+  <div class="gut" class:late>
+    <span>{relativeDay(w.date, date)}</span>
+    {#if hm(w)}<span class="at">{hm(w)}</span>{/if}
+  </div>
+{/snippet}
+
+{#snippet kind(i: AgendaItem)}
+  <span class="chip {i.network ?? ''}">
+    {#if i.kind === "due"}<Icon name="flag" size={13} />
+    {:else if i.kind === "event"}<Icon name="diamond" size={13} />
+    {:else}<span class="dot" aria-hidden="true"></span>{/if}
+    {kindLabel(i)}
+  </span>
+{/snippet}
+
 <div class="today">
-  <header>
-    <h1>{t("today.title")}</h1>
-    <p class="muted">{date && relativeDay(date, date)} · {date}</p>
+  <header class="indent">
+    {#if date}<div class="kicker">{longDate(date)}</div>{/if}
+    <h1 class="display">{t("today.title")}</h1>
+    {#if today}<p class="dek">{todaySummary(today)}</p>{/if}
   </header>
 
   {#if today}
     {#if today.invalid_files > 0}
-      <section class="notice danger" aria-labelledby="inv">
+      <section class="notice danger indent" aria-labelledby="inv">
         <h2 id="inv">{t("today.invalid", { n: today.invalid_files })}</h2>
         <ul>
           {#each app.index?.invalid ?? [] as f (f.path)}
@@ -43,21 +62,27 @@
     {/if}
 
     <section aria-labelledby="post-today">
-      <h2 id="post-today">{t("today.post_today")}</h2>
+      <h2 class="section-label indent" id="post-today">
+        {t("today.post_today")}<span class="n">{today.posts.length}</span>
+      </h2>
       {#if today.posts.length === 0}
-        <p class="muted">{t("today.no_posts")}</p>
+        <p class="muted indent">{t("today.no_posts")}</p>
       {:else}
-        <ul class="items">
+        <ul class="entries">
           {#each today.posts as p (p.id)}
-            <li class="item post" class:done={p.done}>
-              <div class="line">
-                <span class="time">{hm(p.when)}</span>
-                <span class="chip {p.network}">{networkLabel(p.network)}</span>
-                <button class="ghost title" onclick={() => openItem("card", p.id)}>{p.title}</button>
-                {#if p.done}<span class="chip ok">{t(`status.${p.status}`)}</span>{/if}
+            <li class="entry" class:done={p.done}>
+              <div class="gut time">{hm(p.when)}</div>
+              <div class="card item post">
+                <div class="line">
+                  <span class="chip {p.network}"><span class="dot" aria-hidden="true"></span>{networkLabel(p.network)}</span>
+                  <button class="ghost title" onclick={() => openItem("card", p.id)}>{p.title}</button>
+                  {#if p.done}
+                    <span class="chip ok"><Icon name="check" size={13} />{t(`status.${p.status}`)}</span>
+                  {/if}
+                </div>
+                {#if !p.done}<Problems problems={app.index?.readiness[p.id] ?? []} />{/if}
+                {#if !p.done}<PostActions id={p.id} compact />{/if}
               </div>
-              {#if !p.done}<Problems problems={app.index?.readiness[p.id] ?? []} />{/if}
-              {#if !p.done}<PostActions id={p.id} compact />{/if}
             </li>
           {/each}
         </ul>
@@ -66,29 +91,37 @@
 
     {#if today.cadence.length}
       <section aria-labelledby="cadence">
-        <div class="row between">
-          <h2 id="cadence">{t("cadence.title")}</h2>
-          <button class="ghost small" onclick={() => (app.view = "rhythm")}>{t("cadence.see_rhythm")} →</button>
-        </div>
-        <div class="meters">
-          {#each today.cadence as c (c.network)}<CadenceMeter progress={c} compact />{/each}
+        <h2 class="section-label indent" id="cadence">{t("cadence.title")}</h2>
+        <div class="entry">
+          <div class="gut"></div>
+          <div class="meters">
+            {#each today.cadence as c (c.network)}<CadenceMeter progress={c} compact />{/each}
+            <button class="ghost small see" onclick={() => (app.view = "rhythm")}>
+              {t("cadence.see_rhythm")}
+              <Icon name="arrow-right" size={14} />
+            </button>
+          </div>
         </div>
       </section>
     {/if}
 
     {#if today.overdue.length}
       <section aria-labelledby="overdue">
-        <h2 id="overdue">{t("today.overdue")}</h2>
-        <ul class="items">
+        <h2 class="section-label indent" id="overdue">
+          {t("today.overdue")}<span class="n">{today.overdue.length}</span>
+        </h2>
+        <ul class="entries">
           {#each today.overdue as i (i.kind + i.id)}
-            <li class="item">
-              <div class="line">
-                <span class="chip danger">{whenLabel(i.when, date)}</span>
-                <span class="chip {i.network ?? ''}">{kindLabel(i)}</span>
-                <button class="ghost title" onclick={() => openItem("card", i.id)}>{i.title}</button>
-                <span class="small muted">{boardName(i.board)}</span>
+            <li class="entry">
+              {@render when(i.when, true)}
+              <div class="card item">
+                <div class="line">
+                  {@render kind(i)}
+                  <button class="ghost title" onclick={() => openItem("card", i.id)}>{i.title}</button>
+                  <span class="small muted board">{boardName(i.board)}</span>
+                </div>
+                {#if i.kind === "publication"}<PostActions id={i.id} compact />{/if}
               </div>
-              {#if i.kind === "publication"}<PostActions id={i.id} compact />{/if}
             </li>
           {/each}
         </ul>
@@ -96,13 +129,16 @@
     {/if}
 
     {#each today.empty_queues as q (q.network)}
-      <section class="notice warn" aria-label={t("today.empty_queue", { net: q.label, days: q.days })}>
-        <h2>{t("today.empty_queue", { net: q.label, days: q.days })}</h2>
+      <section
+        class="notice warn indent"
+        aria-label={t("today.empty_queue", { net: q.label, days: q.days })}
+      >
+        <h2><Icon name="triangle-alert" size={15} />{t("today.empty_queue", { net: q.label, days: q.days })}</h2>
         {#if q.candidates.length}
           <p class="small">{t("today.candidates")}</p>
           <div class="row">
             {#each q.candidates as c (c.id)}
-              <button onclick={() => openItem("card", c.id)}>{c.title}</button>
+              <button class="pill" onclick={() => openItem("card", c.id)}>{c.title}</button>
             {/each}
           </div>
         {:else}
@@ -112,20 +148,25 @@
     {/each}
 
     <section aria-labelledby="upcoming">
-      <h2 id="upcoming">{t("today.upcoming")}</h2>
+      <h2 class="section-label indent" id="upcoming">
+        {t("today.upcoming")}<span class="n">{today.upcoming.length}</span>
+      </h2>
       {#if today.upcoming.length === 0}
-        <p class="muted">{t("today.no_upcoming")}</p>
+        <p class="muted indent">{t("today.no_upcoming")}</p>
       {:else}
-        <ul class="items">
+        <ul class="entries ledger">
           {#each today.upcoming as i (i.kind + i.id)}
-            <li class="item">
+            <li class="entry">
+              {@render when(i.when)}
               <div class="line">
-                <span class="chip" class:warn={i.when.date === date}>{whenLabel(i.when, date)}</span>
-                <span class="chip">{kindLabel(i)}</span>
-                <button class="ghost title" onclick={() => openItem(i.kind === "event" ? "event" : "card", i.id)}>
+                {@render kind(i)}
+                <button
+                  class="ghost title"
+                  onclick={() => openItem(i.kind === "event" ? "event" : "card", i.id)}
+                >
                   {i.title}
                 </button>
-                {#if i.board}<span class="small muted">{boardName(i.board)}</span>{/if}
+                {#if i.board}<span class="small muted board">{boardName(i.board)}</span>{/if}
               </div>
             </li>
           {/each}
@@ -135,31 +176,59 @@
 
     {#if today.stale.length}
       <section aria-labelledby="stale">
-        <h2 id="stale">{t("today.stale")}</h2>
-        <div class="row">
+        <h2 class="section-label indent" id="stale">{t("today.stale")}</h2>
+        <ul class="entries ledger">
           {#each today.stale as c (c.id)}
-            <button class="ghost stale" onclick={() => openItem("card", c.id)}>
-              {c.title} <span class="small muted">· {boardName(c.board)}</span>
-            </button>
+            <li class="entry">
+              <div class="gut"></div>
+              <div class="line">
+                <button class="ghost title" onclick={() => openItem("card", c.id)}>{c.title}</button>
+                <span class="small muted board">{boardName(c.board)}</span>
+              </div>
+            </li>
           {/each}
-        </div>
+        </ul>
       </section>
     {/if}
   {/if}
 </div>
 
 <style>
+  /* Dates and times live left of the notebook margin, everything you read to the right of it. */
   .today {
+    --gut: 96px;
+    --gap: 28px;
+    --pad-l: 24px;
+    position: relative;
+    box-sizing: border-box;
     max-width: 860px;
-    margin: 0 auto;
-    padding: var(--sp-5) var(--sp-4);
+    min-height: 100%;
+    margin: 0;
+    padding: var(--sp-5) var(--sp-5) var(--sp-6) var(--pad-l);
     display: flex;
     flex-direction: column;
     gap: var(--sp-5);
   }
 
-  header p {
-    margin: var(--sp-1) 0 0;
+  /* Inside the scrolling content, so the line moves with the text. It sits in the gap between the
+     gutter and the content, where there is no text. */
+  .today::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--pad-l) + var(--gut) + var(--gap) / 2);
+    width: 1.5px;
+    background: var(--margin-line);
+    pointer-events: none;
+  }
+
+  .indent {
+    margin-left: calc(var(--gut) + var(--gap));
+  }
+
+  header h1 {
+    margin: 2px 0;
   }
 
   section {
@@ -168,7 +237,17 @@
     gap: var(--sp-2);
   }
 
-  .items {
+  h2 {
+    margin: 0;
+  }
+
+  .section-label .n {
+    margin-left: 6px;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  .entries {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -177,56 +256,166 @@
     gap: var(--sp-2);
   }
 
-  .item {
+  .entry {
+    display: grid;
+    grid-template-columns: var(--gut) minmax(0, 1fr);
+    column-gap: var(--gap);
+    align-items: start;
+  }
+
+  .gut {
+    padding-top: 9px;
+    text-align: right;
+    font-size: var(--fs-md);
+    line-height: 1.25;
+    color: var(--text-muted);
+  }
+
+  .gut .at {
+    display: block;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gut.time {
+    padding-top: 6px;
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--text);
+  }
+
+  .gut.late {
+    font-weight: 600;
+    color: var(--danger);
+  }
+
+  /* What asks for action is a card. */
+  .card {
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
     padding: var(--sp-2) var(--sp-3);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
   }
 
-  .item.done .title {
+  /* What is done is only a trace of a card. */
+  .done .card {
+    background: transparent;
+    box-shadow: none;
+    border-style: dashed;
+  }
+
+  .done .gut.time,
+  .done .title {
     color: var(--text-muted);
   }
 
   .line {
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
     flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-3);
   }
 
-  .between {
-    justify-content: space-between;
+  .title {
+    flex: 1 1 14ch;
+    min-width: 0;
+    padding: 0 var(--sp-1);
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .board {
+    margin-left: auto;
+  }
+
+  /* Chips are plain text here, except the ones that say a state. */
+  .chip {
+    gap: 5px;
+    font-weight: 600;
+  }
+
+  .chip:not(.ok, .warn, .danger) {
+    padding: 0;
+    background: none;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* What is only for reading is a ruled line. */
+  .ledger {
+    gap: 0;
+  }
+
+  .ledger .entry {
+    padding-bottom: var(--sp-1);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ledger .gut {
+    padding-top: 6px;
+  }
+
+  .ledger .line {
+    padding-top: var(--sp-1);
   }
 
   .meters {
     display: flex;
-    gap: var(--sp-5);
     flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3) var(--sp-5);
   }
 
-  .time {
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .title {
-    font-weight: 600;
-    text-align: left;
-    padding: 0 var(--sp-1);
+  .see {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
   }
 
   .notice {
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border-left: 3px solid currentColor;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+
+  .notice h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-ui);
+    font-size: var(--fs-md);
+    font-weight: 700;
+  }
+
+  .notice p {
+    margin: 0;
   }
 
   .notice.warn {
     background: var(--warning-soft);
     color: var(--warning);
+  }
+
+  .notice.warn p {
+    color: var(--text-muted);
   }
 
   .notice.danger {
@@ -239,6 +428,15 @@
     padding-left: var(--sp-4);
   }
 
+  .pill {
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .link {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
@@ -246,7 +444,17 @@
     padding: 0;
   }
 
-  .stale {
-    border: 1px dashed var(--border);
+  /* Narrow window: the gutter shrinks so the content keeps its room. */
+  @media (max-width: 860px) {
+    .today {
+      --gut: 76px;
+      --gap: 20px;
+      --pad-l: 12px;
+      padding-right: var(--sp-4);
+    }
+
+    .gut.time {
+      font-size: var(--fs-md);
+    }
   }
 </style>

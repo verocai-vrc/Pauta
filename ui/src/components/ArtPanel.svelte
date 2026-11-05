@@ -6,6 +6,7 @@
   import { api, type Card } from "../lib/api";
   import { t } from "../lib/i18n";
   import { app, fail, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
 
   let { card, flush, onchange }: { card: Card; flush: () => Promise<void>; onchange: (c: Card) => void } = $props();
 
@@ -49,7 +50,7 @@
 </script>
 
 <section class="art" aria-labelledby="art-h">
-  <div class="row between">
+  <div class="row between rule-heading">
     <h3 id="art-h">{t("art.title")}</h3>
     <span class="chip" class:ok={status === "ready"} class:warn={status === "requested"}>
       {status === "ready" ? t("art.status_ready") : status === "requested" ? t("art.status_requested") : t("art.status_none")}
@@ -68,7 +69,7 @@
 
   {#if status === null}
     <p class="small muted">{t("art.intro")}</p>
-    <div class="row"><button class="primary" disabled={busy} onclick={request}>🎨 {t("art.request")}</button></div>
+    <div class="row"><button class="primary" disabled={busy} onclick={request}><Icon name="palette" /> {t("art.request")}</button></div>
   {:else}
     {#if chosen !== card.art?.format && status === "requested"}
       <p class="small muted">{t("art.format_changed")}</p>
@@ -76,10 +77,10 @@
     {/if}
     <p class="small muted">{t("art.brief_hint")}</p>
     <div class="row">
-      <button class:primary={status === "requested"} disabled={busy} onclick={copy}>⧉ {t("art.copy_request")}</button>
-      <button disabled={busy} onclick={() => api.openArtTool().catch(fail)}>↗ {t("art.open_tool")}</button>
-      <button disabled={busy} onclick={attach}>＋ {t("art.attach")}</button>
-      <button disabled={busy} onclick={() => api.openAssets(card.id).catch(fail)}>🗀 {t("art.open_folder")}</button>
+      <button class:primary={status === "requested"} disabled={busy} onclick={copy}><Icon name="copy" /> {t("art.copy_request")}</button>
+      <button disabled={busy} onclick={() => api.openArtTool().catch(fail)}><Icon name="external-link" /> {t("art.open_tool")}</button>
+      <button disabled={busy} onclick={attach}><Icon name="plus" /> {t("art.attach")}</button>
+      <button disabled={busy} onclick={() => api.openAssets(card.id).catch(fail)}><Icon name="folder" /> {t("art.open_folder")}</button>
     </div>
 
     <div class="files">
@@ -93,7 +94,7 @@
 
     <div class="row">
       {#if status === "requested"}
-        <button class="primary" disabled={busy || card.assets.length === 0} onclick={ready} title={card.assets.length === 0 ? t("art.ready_needs_files") : ""}>✓ {t("art.mark_ready")}</button>
+        <button class="primary" disabled={busy || card.assets.length === 0} onclick={ready} title={card.assets.length === 0 ? t("art.ready_needs_files") : ""}><Icon name="check" /> {t("art.mark_ready")}</button>
       {:else}
         <button disabled={busy} onclick={reopen}>{t("art.reopen")}</button>
       {/if}
@@ -104,10 +105,6 @@
 
 <style>
   .art {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -115,6 +112,10 @@
 
   .between {
     justify-content: space-between;
+  }
+
+  .rule-heading h3 {
+    font-size: inherit;
   }
 
   p {

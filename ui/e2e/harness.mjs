@@ -12,7 +12,7 @@ import { chromium } from "playwright-core";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(import.meta.dirname, "../..");
-const dist = path.join(root, "ui/dist");
+const dist = process.env.PAUTA_DIST ?? path.join(root, "ui/dist");
 export const shots = process.env.SHOTS;
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
@@ -89,7 +89,20 @@ export async function newPage(scheme = "light", { init } = {}) {
   return page;
 }
 
+const fonts = ["Fraunces Variable", "Source Sans 3 Variable"];
+
 export async function audit(page, name, scheme) {
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family);
+  });
+  for (const f of fonts) {
+    if (!loaded.some((l) => l.includes(f))) problems.push(`[${scheme}] ${name}: font not loaded: ${f}`);
+  }
+
+  // axe cannot measure contrast over a background image and would skip that text without saying
+  // so. The ruling is only hairlines, so the audit measures the text against the plain paper.
+  const noRuling = await page.addStyleTag({ content: ":root { --ruling: none !important; }" });
   await page.addScriptTag({ content: axeSource });
   const result = await page.evaluate(() =>
     window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } }),
@@ -101,6 +114,7 @@ export async function audit(page, name, scheme) {
       problems.push(`[${scheme}] ${name}: ${v.id} (${v.impact}) ${node.target.join(" ")} :: ${v.help}${detail}`);
     }
   }
+  await noRuling.evaluate((el) => el.remove());
   if (shots) await page.screenshot({ path: path.join(shots, `${scheme}-${name}.png`) });
 }
 

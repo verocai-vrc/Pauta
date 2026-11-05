@@ -5,6 +5,7 @@
   } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
+  import Icon, { type IconName } from "./Icon.svelte";
   import Modal from "./Modal.svelte";
   import WeekGrid from "./WeekGrid.svelte";
 
@@ -73,10 +74,10 @@
           : t("cal.from", { date: shortDate(cursor) }),
   );
 
-  function icon(i: AgendaItem) {
-    if (i.kind === "publication") return "↗";
-    if (i.kind === "due") return "⚑";
-    return ({ deadline: "⚑", milestone: "★", launch: "▲" } as Record<string, string>)[i.status ?? ""] ?? "◆";
+  function icon(i: AgendaItem): IconName {
+    if (i.kind === "publication") return "external-link";
+    if (i.kind === "due") return "flag";
+    return ({ deadline: "flag", milestone: "star", launch: "rocket" } as Record<string, IconName>)[i.status ?? ""] ?? "diamond";
   }
 
   function label(i: AgendaItem) {
@@ -151,11 +152,11 @@
       openItem(i.kind === "event" ? "event" : "card", i.id);
     }}
   >
-    <span aria-hidden="true">{icon(i)}</span>
+    <Icon name={icon(i)} size={12} />
     <span class="sr-only">{kindLabel(i)}:</span>
     {#if hm(i.when)}<span class="t">{hm(i.when)}</span>{/if}
     <span class="txt">{i.title}</span>
-    {#if i.done}<span class="sr-only">({t("cal.done")})</span>{/if}
+    {#if i.done}<Icon name="check" size={12} /><span class="sr-only">({t("cal.done")})</span>{/if}
   </button>
 {/snippet}
 
@@ -168,17 +169,18 @@
       {/each}
     </div>
     <div class="row">
-      <button aria-label={t("cal.prev")} onclick={() => go(-1)}>‹</button>
+      <button class="with-icon" aria-label={t("cal.prev")} onclick={() => go(-1)}><Icon name="chevron-left" /></button>
       <button onclick={() => (cursor = today)}>{t("cal.today")}</button>
-      <button aria-label={t("cal.next")} onclick={() => go(1)}>›</button>
+      <button class="with-icon" aria-label={t("cal.next")} onclick={() => go(1)}><Icon name="chevron-right" /></button>
       <strong class="period" aria-live="polite">{title}</strong>
     </div>
     <span class="spacer"></span>
     <button
+      class="with-icon"
       onclick={() => {
         app.newEventDate = today;
         app.openEvent = "new";
-      }}>＋ {t("cal.new_event")}</button
+      }}><Icon name="plus" /> {t("cal.new_event")}</button
     >
   </header>
 
@@ -201,7 +203,7 @@
       {#if agendaDays.length === 0}<p class="muted">{t("cal.nothing")}</p>{/if}
       {#each agendaDays as [day, list] (day)}
         <section>
-          <h2 class:today={day === today}>{relativeDay(day, today)} <span class="muted small">{day}</span></h2>
+          <h2 class="rule-heading" class:today={day === today}>{relativeDay(day, today)} <span class="muted small">{day}</span></h2>
           <ul>
             {#each list as i (i.kind + i.id)}
               <li>
@@ -285,7 +287,7 @@
 
 {#if creatingOn}
   <Modal title={t("cal.create_on", { date: shortDate(creatingOn) })} onclose={() => (creatingOn = null)}>
-    <button class="primary" onclick={createEvent}>◆ {t("cal.new_event")}</button>
+    <button class="primary with-icon" onclick={createEvent}><Icon name="diamond" /> {t("cal.new_event")}</button>
     <form class="form" onsubmit={createCard}>
       <p class="small muted">{t("cal.or_card")}</p>
       <label class="field">
@@ -318,6 +320,15 @@
 
   .period {
     margin-left: var(--sp-2);
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
+  }
+
+  .with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
   }
 
   .active {
@@ -337,14 +348,17 @@
   .weekrow {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 2px;
   }
 
+  .weekdays {
+    border-bottom: 1px solid var(--head-rule);
+  }
+
+  /* Hairlines between the cells, in place of separate boxes. */
   .cells {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
   }
 
   .weekrow {
@@ -360,14 +374,18 @@
   }
 
   .cell {
-    background: var(--surface);
-    border-radius: var(--radius-sm);
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
     padding: 2px 4px 4px;
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
     overflow: hidden;
+  }
+
+  .cell:first-child {
+    border-left: none;
   }
 
   .cell.other {
@@ -422,10 +440,9 @@
     border-left-color: var(--c-instagram);
   }
 
-  /* Done items: struck through and muted by color, never by opacity (contrast). */
+  /* Done items: muted by color, never by opacity (contrast), and marked with a check. */
   .item.done {
     color: var(--text-muted);
-    text-decoration: line-through;
   }
 
   .t {

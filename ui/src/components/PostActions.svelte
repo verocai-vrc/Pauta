@@ -4,6 +4,7 @@
   import { api } from "../lib/api";
   import { t } from "../lib/i18n";
   import { app, card, fail, networkLabel, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
   let { id, compact = false }: { id: string; compact?: boolean } = $props();
@@ -52,13 +53,13 @@
 
 {#if c?.network}
   <div class="row" class:compact>
-    <button onclick={copy} title={t("post.copy_hint")}>⧉ {t("post.copy")}</button>
+    <button onclick={copy} title={t("post.copy_hint")}><Icon name="copy" /> {t("post.copy")}</button>
     {#if net?.url}
-      <button onclick={() => api.openUrl(net.url!).catch(fail)}>↗ {t("post.open_network", { net: networkLabel(c.network) })}</button>
+      <button onclick={() => api.openUrl(net.url!).catch(fail)}><Icon name="external-link" /> {t("post.open_network", { net: networkLabel(c.network) })}</button>
     {/if}
-    <button onclick={() => api.openAssets(id).catch(fail)}>🗀 {t("post.assets")}</button>
+    <button onclick={() => api.openAssets(id).catch(fail)}><Icon name="folder" /> {t("post.assets")}</button>
     {#if c.publication?.status !== "published"}
-      <button class="primary" onclick={() => (publishing = true)}>✓ {t("post.mark_published")}</button>
+      <button class="primary" onclick={() => (publishing = true)}><Icon name="check" /> {t("post.mark_published")}</button>
     {/if}
   </div>
 {/if}

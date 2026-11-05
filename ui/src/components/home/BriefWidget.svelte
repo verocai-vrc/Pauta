@@ -1,22 +1,24 @@
 <script lang="ts">
   import type { AgendaItem } from "../../lib/api";
   import { longDate } from "../../lib/dates";
-  import { app } from "../../lib/store.svelte";
+  import { greeting, nextUp, nextUpText } from "../../lib/home/brief";
+  import { app, networkLabel } from "../../lib/store.svelte";
   import { todaySummary } from "../../lib/summary";
 
   let { agenda }: { agenda: AgendaItem[] } = $props();
 
   const today = $derived(app.today!);
-  void agenda;
+  const next = $derived(nextUp(agenda, today.date, today.time));
 </script>
 
 <section class="brief w-card" aria-labelledby="w-brief">
   <div class="day">
     <div class="kicker">{longDate(today.date)}</div>
-    <h1 id="w-brief" class="display">Início</h1>
+    <h1 id="w-brief" class="display">{greeting(today.time)}</h1>
   </div>
   <div class="lines">
     <p class="dek">{todaySummary(today)}</p>
+    {#if next}<p class="next">{nextUpText(next, today.date, networkLabel)}</p>{/if}
   </div>
 </section>
 
@@ -41,5 +43,12 @@
 
   .dek {
     line-height: 1.3;
+  }
+
+  .next {
+    margin: 4px 0 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text);
   }
 </style>

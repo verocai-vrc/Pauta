@@ -8,7 +8,7 @@ export interface Limits {
   projects: number;
 }
 
-export const NORMAL: Limits = { posts: 2, warnings: 5, agenda: 12, rhythm: 3, ideas: 3, projects: 4 };
+export const NORMAL: Limits = { posts: 2, warnings: 5, agenda: 12, rhythm: 2, ideas: 3, projects: 4 };
 
-/** Windows at least 960px tall. */
-export const ROOMY: Limits = { posts: 4, warnings: 9, agenda: 20, rhythm: 3, ideas: 6, projects: 6 };
+/** Windows at least 960px tall. Sized so the worst day fits 1920x1000, a maximized window on a 1080p screen. */
+export const ROOMY: Limits = { posts: 2, warnings: 6, agenda: 14, rhythm: 3, ideas: 4, projects: 5 };

@@ -74,12 +74,14 @@ Cada widget mostra no máximo este número de itens. O que sobra aparece como "+
 
 | Widget | Janela normal | Altura de 960px ou mais |
 | --- | --- | --- |
-| Postar hoje (linhas além do próximo post) | 2 | 4 |
-| Avisos | 5 | 9 |
-| Agenda (itens) | 12 | 20 |
-| Ritmo (redes) | 3 | 3 |
-| Ideias | 3 | 6 |
-| Projetos | 4 | 6 |
+| Postar hoje (linhas além do próximo post) | 2 | 2 |
+| Avisos | 5 | 6 |
+| Agenda (itens) | 12 | 14 |
+| Ritmo (redes) | 2 | 3 |
+| Ideias | 3 | 4 |
+| Projetos | 4 | 5 |
+
+Os limites valem para o dia mais cheio caber sem rolagem em 1280×820 e em 1920×1000, a área útil de uma janela maximizada em 1920×1080, descontadas a barra do sistema e a do título.
 
 Quem decide é `MediaQuery("(min-height: 960px)")` de `svelte/reactivity`.
 
@@ -104,7 +106,7 @@ Cartão de largura total, em duas partes separadas por uma linha vertical `--mar
 
 Lista `today.posts`. A contagem é a dos posts pendentes. "Ver mais" abre o Hoje.
 
-- **Próximo post:** o primeiro pendente. Mostra a hora em serifa, a rede, o título em serifa (até duas linhas), `Problems` e `PostActions compact`. Se o horário passou, a hora fica em `--danger` e aparece o selo "atrasado".
+- **Próximo post:** o primeiro pendente. Mostra a hora em serifa, a rede, o título em serifa (até duas linhas), os problemas de prontidão em uma linha curta ("falta imagem · sem texto", com `triangle-alert` em `--warning`) e `PostActions compact`. O texto longo de `Problems` não cabe em uma coluna estreita; ele continua no Hoje e no editor. Se o horário passou, a hora fica em `--danger` e aparece o selo "atrasado".
 - **Demais:** os outros pendentes e depois os publicados, cada um em uma linha com hora, rede e título. O publicado leva `check` e texto apagado.
 - **Sem posts hoje:** "Nada para postar hoje." e, abaixo, o próximo post da agenda ("Próximo post: {quando}"), se houver.
 - **Tudo publicado:** "Tudo publicado hoje." e as linhas dos publicados.
@@ -122,7 +124,7 @@ A lista é montada nesta ordem:
 | 5 | Cartões parados, uma linha com o total | `clock` apagado | Hoje |
 
 - Em 2, sai o post de hoje que está em `today.posts` e pendente, porque Postar hoje já o mostra. Prazos continuam, mesmo que sejam do mesmo cartão.
-- Em 3, sai o próximo post de Postar hoje, porque ele já mostra `Problems`. Se houver mais de um problema, a linha mostra o primeiro.
+- Em 3, sai o próximo post de Postar hoje, porque ele já mostra os seus problemas. Se houver mais de um problema, a linha mostra o primeiro.
 - O contador é o total de linhas. Sem nenhum aviso, o cartão fica no lugar com `check` em `--ok` e "Tudo em dia."
 - "Ver mais" abre o Hoje.
 
@@ -139,7 +141,7 @@ A lista é montada nesta ordem:
 
 ### 5.5 Ritmo
 
-Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
+Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Nesse modo, são no máximo seis pontos, em uma linha só, seguidos de "…"; o número exato está no texto. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
 
 ### 5.6 Ideias
 
@@ -258,7 +260,7 @@ A tela é composta na interface, a partir do que o backend já entrega (`get_ind
 - **`screens.mjs`**, nos dois temas, com axe WCAG 2.2 AA: `home`, `home-full`, `home-empty`, `calendar-today` e `calendar-today-full`.
 - **Comportamento em `screens.mjs`:**
   - O app abre no Início e `Alt+1` volta a ele.
-  - `home-full` não rola em 1280×820 nem em 1920×1080, e os títulos não vazam dos cartões.
+  - `home-full` não rola em 1280×820, em 1920×1000 nem em 1920×1080, e os títulos não vazam dos cartões.
   - Não há rolagem horizontal em 1100, 900 e 720px.
   - "+N · Ver mais" mostra o número certo, e cada "Ver mais" chega ao destino da seção 5.
   - A aba Hoje esconde as setas e os filtros.

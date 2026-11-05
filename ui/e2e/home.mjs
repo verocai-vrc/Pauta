@@ -80,7 +80,8 @@ group("nav", async () => {
 });
 
 group("fit", async () => {
-  for (const [width, height] of [[1280, 820], [1920, 1080]]) {
+  // 1920x1000 is what a maximized window really gets on a 1080p screen, under the system bar and the title bar.
+  for (const [width, height] of [[1280, 820], [1920, 1000], [1920, 1080]]) {
     const p = await home(fullHome, { width, height });
     const m = await p.evaluate(() => {
       const c = document.querySelector("main.content");
@@ -148,6 +149,7 @@ group("post", async () => {
   const full = await home(fullHome);
   expect((await full.locator(`${post} .w-row`).count()) === 2, "Postar hoje ignores its limit");
   expect((await text(full, more("post"))).includes("+2 · Ver mais"), `Postar hoje: ${await text(full, more("post"))}`);
+  expect((await text(full, post)).includes("falta imagem · sem texto"), "the next post's problems are not on one short line");
   await full.close();
 
   const late = await home(lateHome);
@@ -229,7 +231,7 @@ group("agenda", async () => {
   await full.close();
 
   const roomy = await home(fullHome, { width: 1920, height: 1080 });
-  expect((await roomy.locator(`${box} .w-row`).count()) === 20, "agenda does not use the room of a large window");
+  expect((await roomy.locator(`${box} .w-row`).count()) === 14, "agenda does not use the room of a large window");
   await roomy.close();
 
   const none = await home(emptyHome);
@@ -246,6 +248,18 @@ group("rhythm", async () => {
   await p.waitForSelector("text=Posts por semana");
   expect(await onView(p, "Ritmo"), "Ver mais in Ritmo does not open Ritmo");
   await p.close();
+
+  // Three networks do not fit a normal window, and a goal of 12 stays on one line.
+  const full = await home(fullHome);
+  expect((await text(full, more("rhythm"))).includes("+1 · Ver mais"), `Ritmo: ${await text(full, more("rhythm"))}`);
+  await full.close();
+  const roomy = await home(fullHome, { width: 1920, height: 1080 });
+  const lines = await roomy.evaluate(() => {
+    const dots = [...document.querySelectorAll('[data-widget="rhythm"] [role=img]')].pop();
+    return { tops: new Set([...dots.children].map((d) => Math.round(d.getBoundingClientRect().top))).size, dots: dots.querySelectorAll(".dot").length };
+  });
+  expect(lines.tops === 1 && lines.dots === 6, `a goal of 12: ${JSON.stringify(lines)}`);
+  await roomy.close();
 
   const none = await home(emptyHome);
   expect(await none.locator(`${box} >> text=Nenhuma meta definida.`).count(), "no empty message in Ritmo");

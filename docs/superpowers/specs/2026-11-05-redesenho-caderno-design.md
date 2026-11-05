@@ -159,3 +159,17 @@ Todos passam pelas chaves de tradução de `pt-BR.ts`:
 3. As fontes carregam sem rede, sob a CSP real.
 4. Cada atalho da barra lateral está visível e funciona.
 5. O autor revisa capturas de antes e depois e concorda que o app deixou de parecer genérico e inacabado.
+
+## 10. Ajustes feitos na implementação
+
+Decididos depois da revisão de código e da revisão visual:
+
+- **Abas dos quadros:** seguem o protótipo aprovado, com a aba ativa em `--text` sobre `--bg`. Antes não estavam na seção 5, e a aba ativa tinha contraste baixo no Grafite.
+- **Hierarquia dos botões:** um botão primário por seção no editor. "Agendar", "Pedir arte" e "Copiar pedido" passam a botões comuns.
+- **Telas de leitura:** Hoje, Ritmo e Configurações alinham o título à mesma borda esquerda, em vez de centralizar o conteúdo.
+- **Pauta em Ritmo:** gráficos e listas têm fundo `--bg`, para as linhas não parecerem grade do gráfico.
+- **Controles nativos:** caixas de seleção usam `accent-color`, seletores usam uma seta própria (`--chevron`) e o seletor de arquivo é estilizado.
+- **Agenda do Calendário:** linhas com fio, como em Hoje, sem caixas cinzas.
+- **Novo token:** `--fs-base` (15px), para os títulos das linhas de Hoje.
+- **Resumo de Hoje:** um post de hoje já atrasado conta uma vez, como post a publicar. Um prazo atrasado do mesmo cartão continua contando como atrasado.
+- **Testes:** a auditoria falha se o axe deixar de medir contraste por causa de imagem de fundo ou pseudoelemento. A tela Hoje ganhou o estado `today-full`.

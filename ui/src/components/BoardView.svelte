@@ -210,7 +210,7 @@
 
   .columns {
     display: flex;
-    gap: var(--sp-5);
+    gap: var(--sp-4);
     padding: 0 var(--sp-4) var(--sp-4);
     align-items: flex-start;
     overflow-x: auto;
@@ -218,7 +218,7 @@
   }
 
   .column {
-    flex: 0 0 272px;
+    flex: 0 0 240px;
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -275,7 +275,6 @@
     gap: var(--sp-2);
     overflow-y: auto;
     min-height: 48px;
-    padding: 2px;
   }
 
   .dragging {
@@ -288,8 +287,13 @@
     background: var(--focus);
   }
 
+  /* It reads at the top of the empty drop zone, which keeps its height as the drop target and
+     stays out of the way of drops. */
   .empty {
-    text-align: center;
-    margin: var(--sp-2) 0;
+    margin: calc(-1 * (48px + var(--sp-3))) 0 0;
+    padding-top: var(--sp-3);
+    pointer-events: none;
+    font-family: var(--font-serif);
+    font-style: italic;
   }
 </style>

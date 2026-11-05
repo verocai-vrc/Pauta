@@ -95,7 +95,7 @@
         class="nav-item"
         aria-keyshortcuts={aria(SEARCH_SHORTCUT)}
         onclick={() => (app.paletteOpen = true)}
-        title={SEARCH_SHORTCUT}
+        title={`${t("nav.search")} (${SEARCH_SHORTCUT})`}
       >
         <Icon name="search" />
         <span class="label">{t("nav.search")}</span>
@@ -176,7 +176,7 @@
   .brand {
     font-family: var(--font-serif);
     font-weight: 600;
-    font-size: 1.4375rem;
+    font-size: var(--fs-xl);
     line-height: 1.1;
     letter-spacing: -0.01em;
     color: var(--accent);

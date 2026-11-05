@@ -141,9 +141,9 @@
       {/each}
     </div>
     <div class="row actions">
-      <button class="ghost with-icon" onclick={() => (creating = true)}><Icon name="plus" /> {t("board.new")}</button>
-      {#if current}<button class="ghost with-icon" onclick={openSettings}><Icon name="settings" /> {t("board.settings")}</button>{/if}
-      <button class="ghost with-icon" onclick={() => (app.trashOpen = true)}><Icon name="trash-2" /> {t("trash.title")}</button>
+      <button class="ghost with-icon" onclick={() => (creating = true)}><Icon name="plus" />{t("board.new")}</button>
+      {#if current}<button class="ghost with-icon" onclick={openSettings}><Icon name="settings" />{t("board.settings")}</button>{/if}
+      <button class="ghost with-icon" onclick={() => (app.trashOpen = true)}><Icon name="trash-2" />{t("trash.title")}</button>
     </div>
   </div>
 
@@ -241,7 +241,7 @@
             {/each}
           </tbody>
         </table>
-        <button type="button" class="with-icon" onclick={addColumn}><Icon name="plus" /> {t("board.col_add")}</button>
+        <button type="button" class="with-icon" onclick={addColumn}><Icon name="plus" />{t("board.col_add")}</button>
       </fieldset>
       <div class="row">
         <button type="button" class="with-icon" onclick={() => shiftBoard(-1)}><Icon name="chevron-left" /> {t("board.move_left")}</button>
@@ -280,20 +280,28 @@
     flex: 1;
   }
 
+  /* Direction A of the approved mockup: a plain tab, and the current one is ink on paper reversed. */
   .tab {
     border: none;
     background: transparent;
-    border-bottom: 3px solid transparent;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    border-radius: 999px;
+    padding: var(--sp-1) var(--sp-3);
+    color: var(--text-muted);
     display: flex;
     gap: var(--sp-2);
     align-items: center;
   }
 
-  .tab[aria-selected="true"] {
-    border-bottom-color: var(--board-color);
+  .tab[aria-selected="true"],
+  .tab[aria-selected="true"]:hover {
+    background: var(--text);
+    color: var(--bg);
     font-weight: 600;
-    background: var(--surface);
+  }
+
+  /* The dot keeps the colour of the board as data; the ring keeps it visible on the current tab. */
+  .tab[aria-selected="true"] .dot {
+    box-shadow: 0 0 0 1.5px var(--bg);
   }
 
   .dot {
@@ -301,12 +309,6 @@
     height: 9px;
     border-radius: 50%;
     background: var(--board-color);
-  }
-
-  .with-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-1);
   }
 
   .pad {

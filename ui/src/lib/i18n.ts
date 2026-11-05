@@ -19,3 +19,8 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   }
   return msg;
 }
+
+/** A message with a singular and a plural: `tn("x", 1)` reads `x_one`, anything else reads `x_other`. */
+export function tn(key: string, n: number, vars?: Record<string, string | number>): string {
+  return t(`${key}_${n === 1 ? "one" : "other"}`, { n, ...vars });
+}

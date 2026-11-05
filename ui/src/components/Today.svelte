@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api, type AgendaItem, type When } from "../lib/api";
   import { hm, longDate, relativeDay } from "../lib/dates";
-  import { t } from "../lib/i18n";
+  import { t, tn } from "../lib/i18n";
   import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
   import { todaySummary } from "../lib/summary";
   import CadenceMeter from "./CadenceMeter.svelte";
@@ -24,7 +24,7 @@
 </script>
 
 {#snippet when(w: When, late = false)}
-  <div class="gut" class:late>
+  <div class="gut" class:late class:warn={!late && w.date === date}>
     <span>{relativeDay(w.date, date)}</span>
     {#if hm(w)}<span class="at">{hm(w)}</span>{/if}
   </div>
@@ -49,7 +49,7 @@
   {#if today}
     {#if today.invalid_files > 0}
       <section class="notice danger indent" aria-labelledby="inv">
-        <h2 id="inv">{t("today.invalid", { n: today.invalid_files })}</h2>
+        <h2 id="inv">{tn("today.invalid", today.invalid_files)}</h2>
         <ul>
           {#each app.index?.invalid ?? [] as f (f.path)}
             <li>
@@ -63,7 +63,7 @@
 
     <section aria-labelledby="post-today">
       <h2 class="section-label indent" id="post-today">
-        {t("today.post_today")}<span class="n">{today.posts.length}</span>
+        {t("today.post_today")} <span class="n">{today.posts.length}</span>
       </h2>
       {#if today.posts.length === 0}
         <p class="muted indent">{t("today.no_posts")}</p>
@@ -108,7 +108,7 @@
     {#if today.overdue.length}
       <section aria-labelledby="overdue">
         <h2 class="section-label indent" id="overdue">
-          {t("today.overdue")}<span class="n">{today.overdue.length}</span>
+          {t("today.overdue")} <span class="n">{today.overdue.length}</span>
         </h2>
         <ul class="entries">
           {#each today.overdue as i (i.kind + i.id)}
@@ -149,7 +149,7 @@
 
     <section aria-labelledby="upcoming">
       <h2 class="section-label indent" id="upcoming">
-        {t("today.upcoming")}<span class="n">{today.upcoming.length}</span>
+        {t("today.upcoming")} <span class="n">{today.upcoming.length}</span>
       </h2>
       {#if today.upcoming.length === 0}
         <p class="muted indent">{t("today.no_upcoming")}</p>
@@ -181,7 +181,7 @@
           {#each today.stale as c (c.id)}
             <li class="entry">
               <div class="gut"></div>
-              <div class="line">
+              <div class="line bare">
                 <button class="ghost title" onclick={() => openItem("card", c.id)}>{c.title}</button>
                 <span class="small muted board">{boardName(c.board)}</span>
               </div>
@@ -199,12 +199,13 @@
     --gut: 96px;
     --gap: 28px;
     --pad-l: 24px;
+    --pad-r: var(--sp-5);
     position: relative;
     box-sizing: border-box;
     max-width: 860px;
     min-height: 100%;
     margin: 0;
-    padding: var(--sp-5) var(--sp-5) var(--sp-6) var(--pad-l);
+    padding: var(--sp-5) var(--pad-r) var(--sp-6) var(--pad-l);
     display: flex;
     flex-direction: column;
     gap: var(--sp-5);
@@ -241,10 +242,10 @@
     margin: 0;
   }
 
+  /* The count is told apart from the label by weight, not by opacity (contrast). */
   .section-label .n {
-    margin-left: 6px;
+    margin-left: 2px;
     font-weight: 600;
-    opacity: 0.7;
   }
 
   .entries {
@@ -260,11 +261,11 @@
     display: grid;
     grid-template-columns: var(--gut) minmax(0, 1fr);
     column-gap: var(--gap);
-    align-items: start;
+    align-items: first baseline;
   }
 
+  /* The gutter and the entry share the baseline of their first line. */
   .gut {
-    padding-top: 9px;
     text-align: right;
     font-size: var(--fs-md);
     line-height: 1.25;
@@ -277,7 +278,6 @@
   }
 
   .gut.time {
-    padding-top: 6px;
     font-family: var(--font-serif);
     font-size: var(--fs-lg);
     font-weight: 500;
@@ -288,6 +288,11 @@
   .gut.late {
     font-weight: 600;
     color: var(--danger);
+  }
+
+  .gut.warn {
+    font-weight: 600;
+    color: var(--warning);
   }
 
   /* What asks for action is a card. */
@@ -315,16 +320,20 @@
     color: var(--text-muted);
   }
 
+  /* The kind has a column of its own, so the titles start at the same place. */
   .line {
     min-width: 0;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr) auto;
+    align-items: first baseline;
     gap: var(--sp-1) var(--sp-3);
   }
 
+  .line.bare .title {
+    grid-column: 2;
+  }
+
   .title {
-    flex: 1 1 14ch;
     min-width: 0;
     padding: 0 var(--sp-1);
     font-family: var(--font-serif);
@@ -340,15 +349,17 @@
     margin-left: auto;
   }
 
-  /* Chips are plain text here, except the ones that say a state. */
+  /* Chips are plain text here, except the ones that say a state. As in the mockup, all are semibold. */
   .chip {
     gap: 5px;
     font-weight: 600;
+    /* The text gives the baseline of the chip, so the kind lines up with the title beside it. */
+    align-items: baseline;
   }
 
-  .chip:not(.ok, .warn, .danger) {
-    padding: 0;
-    background: none;
+  /* An icon has its baseline at its bottom edge; this sits it on the middle of the text. */
+  .chip :global(.icon) {
+    margin-bottom: -2.5px;
   }
 
   .dot {
@@ -361,19 +372,20 @@
   /* What is only for reading is a ruled line. */
   .ledger {
     gap: 0;
+    /* The rows do not follow the 32px ruling, so the ledger has its own plain paper and only
+       its own lines show. The margin line is positioned and still paints above it. */
+    background: var(--bg);
+    margin: 0 calc(-1 * var(--pad-r)) 0 calc(-1 * var(--pad-l));
+    padding: 0 var(--pad-r) 0 var(--pad-l);
   }
 
   .ledger .entry {
-    padding-bottom: var(--sp-1);
+    padding: var(--sp-1) 0;
     border-bottom: 1px solid var(--border);
   }
 
-  .ledger .gut {
-    padding-top: 6px;
-  }
-
-  .ledger .line {
-    padding-top: var(--sp-1);
+  .ledger .title {
+    font-size: var(--fs-base);
   }
 
   .meters {
@@ -385,6 +397,7 @@
 
   .see {
     margin-left: auto;
+    margin-right: calc(-1 * var(--sp-3));
     display: inline-flex;
     align-items: center;
     gap: var(--sp-1);
@@ -437,6 +450,10 @@
     overflow-wrap: anywhere;
   }
 
+  .pill:hover {
+    background: var(--surface-2);
+  }
+
   .link {
     font-family: var(--font-mono);
     font-size: var(--fs-sm);
@@ -450,11 +467,22 @@
       --gut: 76px;
       --gap: 20px;
       --pad-l: 12px;
-      padding-right: var(--sp-4);
+      --pad-r: var(--sp-4);
     }
 
     .gut.time {
       font-size: var(--fs-md);
+    }
+
+    /* No room for a column: the kind, the title and the board wrap as they fit. */
+    .line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-1) var(--sp-3);
+    }
+
+    .title {
+      flex: 1 1 14ch;
     }
   }
 </style>

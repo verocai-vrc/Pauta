@@ -3,7 +3,7 @@
   // Shape and text carry the meaning; color is only a hint. No alarms, no streaks.
   import type { CadenceProgress } from "../lib/api";
   import { shortDate } from "../lib/dates";
-  import { t } from "../lib/i18n";
+  import { t, tn } from "../lib/i18n";
 
   let { progress, compact = false }: { progress: CadenceProgress; compact?: boolean } = $props();
 
@@ -27,8 +27,8 @@
   </div>
   {#if !compact}
     <p class="small muted">
-      {progress.scheduled > 0 ? t("cadence.scheduled", { n: progress.scheduled }) : ""}
-      {#if missing > 0}{t("cadence.missing", { n: missing })}{:else}{t("cadence.covered")}{/if}
+      {progress.scheduled > 0 ? tn("cadence.scheduled", progress.scheduled) : ""}
+      {#if missing > 0}{tn("cadence.missing", missing)}{:else}{t("cadence.covered")}{/if}
       · {shortDate(progress.period_start)} – {shortDate(progress.period_end)}
     </p>
   {/if}

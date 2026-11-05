@@ -100,9 +100,13 @@ export async function audit(page, name, scheme) {
     if (!loaded.some((l) => l.includes(f))) problems.push(`[${scheme}] ${name}: font not loaded: ${f}`);
   }
 
-  // axe cannot measure contrast over a background image and would skip that text without saying
-  // so. The ruling is only hairlines, so the audit measures the text against the plain paper.
-  const noRuling = await page.addStyleTag({ content: ":root { --ruling: none !important; }" });
+  // axe cannot measure contrast over a background image or under a pseudo-element that has a
+  // background, and it would skip that text without saying so. The ruling is only hairlines, the
+  // select arrow is a small icon in the padding and the margin line is a thin stripe in a gap with
+  // no text, so the audit measures the text against the plain paper.
+  const noRuling = await page.addStyleTag({
+    content: ":root { --ruling: none !important; --chevron: none !important; } .today::before { display: none !important; }",
+  });
   await page.addScriptTag({ content: axeSource });
   const result = await page.evaluate(() =>
     window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } }),
@@ -112,6 +116,15 @@ export async function audit(page, name, scheme) {
       const d = node.any?.[0]?.data;
       const detail = v.id === "color-contrast" && d ? ` [${d.fgColor} on ${d.bgColor}, ${d.contrastRatio}:1, needs ${d.expectedContrastRatio}:1]` : "";
       problems.push(`[${scheme}] ${name}: ${v.id} (${v.impact}) ${node.target.join(" ")} :: ${v.help}${detail}`);
+    }
+  }
+  // A blind spot guard: contrast that axe could not measure for one of these reasons means some
+  // background (an image, a gradient or a pseudo-element) is still under the text.
+  const blind = new Set(["bgImage", "bgGradient", "pseudoContent"]);
+  for (const v of result.incomplete.filter((x) => x.id === "color-contrast")) {
+    for (const node of v.nodes) {
+      const key = node.any?.map((c) => c.data?.messageKey).find((k) => blind.has(k));
+      if (key) problems.push(`[${scheme}] ${name}: contrast not measured (${key}) ${node.target.join(" ")}`);
     }
   }
   await noRuling.evaluate((el) => el.remove());

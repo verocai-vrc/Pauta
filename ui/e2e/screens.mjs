@@ -19,6 +19,7 @@ const fullToday = () => {
     ],
     overdue: [item("due", "01JBX3K9Q2AB", "Revisar capítulo 3 do TCC2", w("2026-10-27", null), { board: "tcc2" })],
     upcoming: [
+      item("due", "t", "Enviar o rascunho ao orientador", w("2026-10-28", null), { board: "tcc2" }),
       item("due", "a", "Entrega parcial do TCC2", w("2026-10-29", null), { board: "tcc2" }),
       item("publication", "b", long, w("2026-10-30", "09:00"), { network: "linkedin" }),
       item("event", "c", "Banca de qualificação", w("2026-11-02", "14:00"), { board: null }),
@@ -98,10 +99,27 @@ for (const scheme of ["light", "dark"]) {
 }
 
 // ---- behavior that the redesign must keep or fix ------------------------------
-const check = await newPage("light");
+// Records the commands sent to the backend, so the global shortcuts can be checked end to end.
+const recordCalls = () => {
+  window.__calls = [];
+  window.__override = (cmd) => void window.__calls.push(cmd);
+};
+const check = await newPage("light", { init: recordCalls });
 const shortcuts = await check.locator("nav kbd").allTextContents();
 const expected = ["Alt+1", "Alt+2", "Alt+3", "Alt+4", "Alt+5", "Ctrl+Shift+I", "Ctrl+K"];
 if ([...shortcuts].sort().join() !== [...expected].sort().join()) problems.push(`sidebar shortcuts: ${shortcuts}`);
+// Every shortcut shown in the sidebar is announced to assistive technology and drawn as decoration.
+const kbdProblems = await check.evaluate(() =>
+  [...document.querySelectorAll("nav button")].flatMap((b) => {
+    const kbd = b.querySelector("kbd");
+    const keys = kbd?.textContent.replace("Ctrl", "Control");
+    const out = [];
+    if (kbd?.getAttribute("aria-hidden") !== "true") out.push(`${keys}: kbd is not aria-hidden`);
+    if (b.getAttribute("aria-keyshortcuts") !== keys) out.push(`${keys}: aria-keyshortcuts is ${b.getAttribute("aria-keyshortcuts")}`);
+    return out;
+  }),
+);
+problems.push(...kbdProblems.map((p) => `sidebar: ${p}`));
 const clipped = await check.evaluate(() =>
   [...document.querySelectorAll("nav button")].filter((b) => b.scrollWidth > b.clientWidth).map((b) => b.textContent),
 );
@@ -112,12 +130,44 @@ for (const [key, label] of [["1", "Hoje"], ["2", "Quadros"], ["3", "Calendário"
   if (!current?.includes(label)) problems.push(`Alt+${key} did not open ${label}: ${current}`);
 }
 
+// Ctrl+K opens the palette and toggles it closed; Ctrl+Shift+I asks the backend for the capture window.
+await check.keyboard.press("Control+k");
+await check.waitForSelector("dialog[open]", { timeout: 2000 }).catch(() => problems.push("Ctrl+K did not open the palette"));
+await check.keyboard.press("Escape");
+await check.keyboard.press("Control+Shift+I");
+if (!(await check.evaluate(() => window.__calls)).includes("open_capture")) problems.push("Ctrl+Shift+I did not open the capture window");
+
+// Done items are marked by a check that stays inside the item, never by color or strike-through alone.
+const doneProblems = (page, scope) =>
+  page.evaluate((scope) => {
+    const items = [...document.querySelectorAll(`${scope} .item.done`)];
+    const out = items.flatMap((item) => {
+      const box = item.getBoundingClientRect();
+      const check = item.querySelector('svg[data-icon="check"]');
+      const found = [];
+      if (getComputedStyle(item).textDecorationLine.includes("line-through")) found.push("struck through");
+      if (!check) return [...found, "no check icon"];
+      const c = check.getBoundingClientRect();
+      if (c.left < box.left - 0.5 || c.right > box.right + 0.5) found.push(`check outside the item (${c.left}-${c.right} in ${box.left}-${box.right})`);
+      return found;
+    });
+    return { n: items.length, out };
+  }, scope);
+
 await check.keyboard.press("Alt+3");
 await check.waitForSelector(".cells");
 const struck = await check.evaluate(() =>
   [...document.querySelectorAll(".cells *")].filter((e) => getComputedStyle(e).textDecorationLine.includes("line-through")).length,
 );
 if (struck) problems.push(`calendar: ${struck} element(s) still struck through`);
+const month = await doneProblems(check, ".cells");
+if (month.n === 0) problems.push("calendar month: no done item to check");
+problems.push(...month.out.map((o) => `calendar month: done item: ${o}`));
+
+await check.click("button:has-text('Agenda')");
+const agenda = await doneProblems(check, ".agenda");
+if (agenda.n === 0) problems.push("calendar agenda: no done item to check");
+problems.push(...agenda.out.map((o) => `calendar agenda: done item: ${o}`));
 
 await check.keyboard.press("Alt+4");
 await check.waitForSelector(".lbl");
@@ -130,6 +180,29 @@ const cut = await check.evaluate(() =>
 if (cut) problems.push(`rhythm: ${cut} chart label(s) cut off`);
 await check.close();
 
+// The week view with three done posts at the same hour: the blocks share the day, so each one is
+// narrow, and the check must still be whole. The narrowest window is the hard case.
+const overlap = await newPage("light", {
+  init: () => {
+    const done = (id, time) => ({
+      kind: "publication", id, board: "conteudo", title: "Post " + id, end: null, network: "linkedin", status: "published", column: null, done: true,
+      when: { date: "2026-10-28", time: time + ":00", at: "2026-10-28T" + time + ":00Z" },
+    });
+    window.__override = (cmd) => (cmd === "get_agenda" ? [done("a", "09:00"), done("b", "09:10"), done("c", "09:20")] : undefined);
+  },
+});
+await overlap.keyboard.press("Alt+3");
+await overlap.click("button:has-text('Semana')");
+await overlap.waitForSelector(".week .item.done");
+for (const width of [1360, 720]) {
+  await overlap.setViewportSize({ width, height: 900 });
+  await overlap.locator(".week .item.done").first().scrollIntoViewIfNeeded();
+  const week = await doneProblems(overlap, ".week");
+  if (week.n !== 3) problems.push(`calendar week at ${width}px: ${week.n} done items, expected 3`);
+  problems.push(...week.out.map((o) => `calendar week at ${width}px: done item: ${o}`));
+}
+await overlap.close();
+
 const narrow = await newPage("light", { init: fullToday });
 await narrow.setViewportSize({ width: 720, height: 900 });
 await narrow.waitForSelector("text=Entrega parcial");
@@ -138,6 +211,34 @@ const overflow = await narrow.evaluate(() => {
   return c.scrollWidth - c.clientWidth;
 });
 if (overflow > 0) problems.push(`today at 720px overflows by ${overflow}px`);
+// The counts do not fuse with the section names, and are not dimmed by opacity.
+for (const name of ["Postar hoje 2", "Atrasados 1", "Próximos 7 dias 4"]) {
+  if ((await narrow.getByRole("heading", { name, exact: true, level: 2 }).count()) !== 1) problems.push(`today: no heading named "${name}"`);
+}
+const counts = await narrow.evaluate(() =>
+  [...document.querySelectorAll(".section-label .n")].map((n) => getComputedStyle(n).opacity),
+);
+if (counts.length !== 3 || counts.some((o) => o !== "1")) problems.push(`today: section counts are dimmed: ${counts}`);
+// A deadline today stands out from the others in the gutter; a late item is red.
+const gutters = await narrow.evaluate(() => {
+  const color = (v) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(${v})`;
+    document.body.append(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  };
+  const gut = (text) => [...document.querySelectorAll(".gut")].find((g) => g.textContent.includes(text));
+  return {
+    today: getComputedStyle(gut("hoje")).color === color("--warning"),
+    later: getComputedStyle(gut("amanhã")).color === color("--warning"),
+    late: getComputedStyle(gut("ontem")).color === color("--danger"),
+  };
+});
+if (!gutters.today) problems.push("today: a deadline due today is not amber");
+if (gutters.later) problems.push("today: a deadline for tomorrow is amber");
+if (!gutters.late) problems.push("today: a late item is not red");
 await narrow.close();
 
 await finish(`ok: ${screens.length * 2} states, no page errors, no axe violations, behavior checks passed`);

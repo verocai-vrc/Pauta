@@ -74,6 +74,12 @@
     font-size: var(--fs-lg);
   }
 
+  /* The notes take the room left in the small window, so no empty band stays under the buttons. */
+  textarea {
+    flex: 1;
+    resize: none;
+  }
+
   .spacer {
     flex: 1;
   }

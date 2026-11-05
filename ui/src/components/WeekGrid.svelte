@@ -81,11 +81,12 @@
     {ondragend}
     onclick={() => onopen(i)}
   >
-    <Icon name={icon(i)} size={12} />
+    <!-- Done is a check in place of the kind icon, where narrow overlapping blocks cannot cut it off. -->
+    <Icon name={i.done ? "check" : icon(i)} size={12} />
     <span class="sr-only">{kindLabel(i)}:</span>
     {#if hm(i.when)}<span class="t">{hm(i.when)}</span>{/if}
     <span class="txt">{i.title}</span>
-    {#if i.done}<Icon name="check" size={12} /><span class="sr-only">({t("cal.done")})</span>{/if}
+    {#if i.done}<span class="sr-only">({t("cal.done")})</span>{/if}
   </button>
 {/snippet}
 
@@ -310,6 +311,11 @@
   .allday .item {
     height: auto;
     align-items: center;
+  }
+
+  /* The icon sits on the first line of text, which is 17px high. */
+  .col .item > :global(.icon) {
+    margin-top: 2px;
   }
 
   .item.due {

@@ -95,6 +95,11 @@
     border-color: var(--text-muted);
   }
 
+  /* The column list scrolls and clips, so the focus ring stays inside the card. */
+  .tile:focus-visible {
+    outline-offset: -2px;
+  }
+
   .title {
     font-family: var(--font-serif);
     font-weight: 500;

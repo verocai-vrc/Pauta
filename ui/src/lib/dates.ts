@@ -82,7 +82,9 @@ export function monthTitle(d: string): string {
 export function longDate(d: string): string {
   const name = WEEKDAYS_LONG[weekday(d)];
   const [, m, day] = d.split("-");
-  return `${name[0].toUpperCase()}${name.slice(1)}, ${Number(day)} de ${MONTHS_LONG[Number(m) - 1]}`;
+  // The first of the month is an ordinal in Brazilian Portuguese: "1º de novembro".
+  const n = Number(day) === 1 ? "1º" : String(Number(day));
+  return `${name[0].toUpperCase()}${name.slice(1)}, ${n} de ${MONTHS_LONG[Number(m) - 1]}`;
 }
 
 /** "hoje", "amanhã", "ontem" or "qua, 4 nov". */

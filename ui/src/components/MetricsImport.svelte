@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, errorMessage, type ImportPreview } from "../lib/api";
-  import { t } from "../lib/i18n";
+  import { t, tn } from "../lib/i18n";
   import { fail, networkLabel, reload, toast } from "../lib/store.svelte";
   import Modal from "./Modal.svelte";
 
@@ -30,8 +30,8 @@
     busy = true;
     try {
       const r = await api.importMetrics(text);
-      if (r.applied.length) toast(t("import.done", { n: r.applied.length }));
-      if (r.failed.length) toast(t("import.failed", { n: r.failed.length }), "error");
+      if (r.applied.length) toast(tn("import.done", r.applied.length));
+      if (r.failed.length) toast(tn("import.failed", r.failed.length), "error");
       await reload();
       onclose();
     } catch (err) {
@@ -45,7 +45,7 @@
   const num = (n: number | null | undefined) => (n == null ? "–" : String(n));
 </script>
 
-<Modal title={t("import.title")} {onclose} width="680px">
+<Modal title={t("import.title")} {onclose} width="780px">
   <p class="muted">{t("import.intro")}</p>
   <label>
     {t("import.file")}
@@ -79,7 +79,7 @@
           <tbody>
             {#each preview.matched as m (m.card_id)}
               <tr>
-                <th scope="row">{m.title}{#if m.network}<span class="small muted"> · {networkLabel(m.network)}</span>{/if}</th>
+                <th scope="row">{m.title}{#if m.network}<span class="small muted net">{networkLabel(m.network)}</span>{/if}</th>
                 {#each FIELDS as f (f)}
                   <td>
                     {#if m.before?.[f] != null && m.before[f] !== m.after[f]}
@@ -118,7 +118,7 @@
     <div class="actions">
       <button class="ghost" onclick={onclose}>{t("common.cancel")}</button>
       <button class="primary" disabled={busy || preview.matched.length === 0} onclick={apply}>
-        {t("import.apply", { n: preview.matched.length })}
+        {tn("import.apply", preview.matched.length)}
       </button>
     </div>
   {/if}
@@ -155,10 +155,19 @@
     white-space: nowrap;
   }
 
+  thead th {
+    font-size: var(--fs-xs);
+  }
+
+  /* The network goes under the title, so the table needs less width and is not cut off. */
   tbody th {
     white-space: normal;
     font-weight: 500;
-    min-width: 15rem;
+    min-width: 11rem;
+  }
+
+  .net {
+    display: block;
   }
 
   .actions {

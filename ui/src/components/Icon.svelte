@@ -55,6 +55,7 @@
 <!-- Always decorative: the accessible name comes from the text or aria-label beside it. -->
 <svg
   class="icon"
+  data-icon={name}
   aria-hidden="true"
   width={size}
   height={size}
@@ -71,6 +72,6 @@
 <style>
   .icon {
     flex: none;
-    vertical-align: -0.15em;
+    vertical-align: -0.24em;
   }
 </style>

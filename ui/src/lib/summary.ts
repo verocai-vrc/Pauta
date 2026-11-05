@@ -12,9 +12,13 @@ function part(kind: "posts" | "overdue" | "upcoming", n: number): string {
 }
 
 export function todaySummary(today: Today): string {
+  const pending = today.posts.filter((p) => !p.done);
+  // A post of today whose time has passed is in both lists; it is counted once, as a post to publish.
+  // Only publications: a card's overdue deadline has the same id as its post but is a separate item.
+  const late = today.overdue.filter((o) => o.kind !== "publication" || !pending.some((p) => p.id === o.id));
   const parts = [
-    ["posts", today.posts.filter((p) => !p.done).length],
-    ["overdue", today.overdue.length],
+    ["posts", pending.length],
+    ["overdue", late.length],
     ["upcoming", today.upcoming.length],
   ] as const;
   const phrases = parts.filter(([, n]) => n > 0).map(([kind, n]) => part(kind, n));

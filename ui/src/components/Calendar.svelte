@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api, type AgendaItem, type AgendaKind } from "../lib/api";
   import {
-    addDays, addMonths, hm, monthGrid, monthTitle, moveToDay, relativeDay, shortDate, weekDays, WEEKDAYS_SHORT,
+    addDays, addMonths, hm, longDate, monthGrid, monthTitle, moveToDay, relativeDay, shortDate, weekDays, WEEKDAYS_SHORT,
   } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
@@ -128,6 +128,9 @@
     return i.kind === "publication" ? networkLabel(i.network) : i.kind === "due" ? t("kind.due") : t(`event.${i.status ?? "event"}`);
   }
 
+  /** The days that relativeDay names with a word; the others are spelled out in the heading already. */
+  const NEAR = ["hoje", "amanhã", "ontem"];
+
   const agendaDays = $derived.by(() => {
     if (mode !== "agenda") return [];
     const byDay: Record<string, AgendaItem[]> = {};
@@ -136,7 +139,7 @@
   });
 </script>
 
-{#snippet chip(i: AgendaItem)}
+{#snippet chip(i: AgendaItem, bare = false)}
   <button
     class="item {i.kind} {i.network ?? ''}"
     class:done={i.done}
@@ -152,11 +155,14 @@
       openItem(i.kind === "event" ? "event" : "card", i.id);
     }}
   >
-    <Icon name={icon(i)} size={12} />
+    <!-- Done is a check in place of the kind icon, as in the week grid, so it can never be cut off.
+         `bare` leaves out the icon of a post in the month: the coloured bar already says what it is. -->
+    {#if i.done}<Icon name="check" size={12} />
+    {:else if !(bare && i.kind === "publication")}<Icon name={icon(i)} size={12} />{/if}
     <span class="sr-only">{kindLabel(i)}:</span>
     {#if hm(i.when)}<span class="t">{hm(i.when)}</span>{/if}
     <span class="txt">{i.title}</span>
-    {#if i.done}<Icon name="check" size={12} /><span class="sr-only">({t("cal.done")})</span>{/if}
+    {#if i.done}<span class="sr-only">({t("cal.done")})</span>{/if}
   </button>
 {/snippet}
 
@@ -203,7 +209,10 @@
       {#if agendaDays.length === 0}<p class="muted">{t("cal.nothing")}</p>{/if}
       {#each agendaDays as [day, list] (day)}
         <section>
-          <h2 class="rule-heading" class:today={day === today}>{relativeDay(day, today)} <span class="muted small">{day}</span></h2>
+          <h2 class="rule-heading" class:today={day === today}>
+            {longDate(day)}
+            {#if NEAR.includes(relativeDay(day, today))}<span class="muted small">· {relativeDay(day, today)}</span>{/if}
+          </h2>
           <ul>
             {#each list as i (i.kind + i.id)}
               <li>
@@ -265,7 +274,7 @@
               {Number(day.slice(8))}
             </button>
             {#each list.slice(0, 4) as i (i.kind + i.id)}
-              {@render chip(i)}
+              {@render chip(i, true)}
             {/each}
             {#if list.length > 4}
               <button
@@ -325,12 +334,6 @@
     font-weight: 500;
   }
 
-  .with-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-1);
-  }
-
   .active {
     background: var(--accent-soft);
     color: var(--accent);
@@ -366,11 +369,16 @@
     min-height: 96px;
   }
 
+  /* The label starts where the date under it does: the cell padding, the padding of the date and the cell border. */
   .wd {
     font-size: var(--fs-xs);
     color: var(--text-muted);
     text-transform: uppercase;
-    padding: var(--sp-1);
+    padding: var(--sp-1) var(--sp-1) var(--sp-1) calc(2 * var(--sp-1) + 1px);
+  }
+
+  .wd:first-child {
+    padding-left: calc(2 * var(--sp-1));
   }
 
   .cell {
@@ -388,8 +396,9 @@
     border-left: none;
   }
 
+  /* Days of the neighbouring months recede: on --sidebar they stay as light in light and are darker than the paper in Grafite. */
   .cell.other {
-    background: var(--surface-2);
+    background: var(--sidebar);
   }
 
   .cell.other .daynum {
@@ -477,25 +486,34 @@
     color: var(--accent);
   }
 
+  /* Hairline rows, as in Today's ledger: no filled boxes. */
   .agenda ul {
     list-style: none;
     padding: 0;
-    margin: var(--sp-2) 0 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
   }
 
   .agenda li {
     display: flex;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     align-items: center;
+    border-bottom: 1px solid var(--border);
   }
 
   .agenda .item {
+    flex: 1;
+    min-width: 0;
     font-size: var(--fs-md);
-    min-height: 30px;
-    max-width: 560px;
+    min-height: 34px;
+    background: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .agenda .item:hover {
+    background: var(--surface-2);
   }
 
   .form {

@@ -23,13 +23,15 @@
       <div class="col" title={`${label(b)}: ${b.total}`}>
         <div class="plot">
           <span class="n small">{b.total || ""}</span>
-          <div class="stack" style:height={`calc((100% - var(--n-h)) * ${b.total / max})`}>
-            {#each networks as n (n)}
-              {#if b.counts[n]}
-                <div class="seg" style:flex={b.counts[n]} style:background={color(n)}></div>
-              {/if}
-            {/each}
-          </div>
+          {#if b.total}
+            <div class="stack" style:height={`calc((100% - var(--n-h)) * ${b.total / max})`}>
+              {#each networks as n (n)}
+                {#if b.counts[n]}
+                  <div class="seg" style:flex={b.counts[n]} style:background={color(n)}></div>
+                {/if}
+              {/each}
+            </div>
+          {/if}
         </div>
         <span class="lbl small muted">{label(b)}</span>
       </div>
@@ -54,8 +56,10 @@
 </figure>
 
 <style>
+  /* Plain paper behind the chart: the ruling would read as gridlines that mean nothing here. */
   figure {
     margin: 0;
+    background: var(--bg);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
@@ -64,7 +68,7 @@
   .chart {
     display: flex;
     align-items: stretch;
-    gap: var(--sp-1);
+    gap: 0;
     height: 150px;
   }
 
@@ -75,6 +79,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    padding-inline: 2px;
   }
 
   /* The bars get the height left after the label, so a tall bar can no longer squeeze the label. */
@@ -87,12 +92,13 @@
     flex-direction: column;
     justify-content: flex-end;
     align-items: center;
+    /* The axis the bars stand on. */
+    border-bottom: 1px solid var(--border);
   }
 
   .stack {
     width: 100%;
     max-width: 34px;
-    min-height: 2px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column-reverse;

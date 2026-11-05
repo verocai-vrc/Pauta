@@ -6,6 +6,7 @@
   --fs-xs: 0.75rem;
   --fs-sm: 0.8125rem;
   --fs-md: 0.875rem;
+  --fs-base: 0.9375rem;
   --fs-lg: 1.0625rem;
   --fs-xl: 1.375rem;
   --fs-display: 2.375rem;
@@ -50,11 +51,14 @@
   --c-event: #2e5a7a;
 
   --scrim: rgb(0 0 0 / 0.35);
+  /* The select arrow. A data URI cannot read tokens, so it carries the --text-muted of its theme. */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%236f6156' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
   --shadow-1: 0 1px 0 var(--border), 0 2px 6px rgb(60 40 20 / 0.05);
   --shadow-2: 0 8px 28px rgb(0 0 0 / 0.18);
   --dur: 140ms;
   /* The notebook paper. A token so the accessibility audit can switch it off. */
   --ruling: repeating-linear-gradient(transparent 0 31px, var(--rule) 31px 32px);
+  accent-color: var(--accent);
   color-scheme: light;
 }
 
@@ -87,6 +91,7 @@
     --c-due: #f0c26a;
     --c-event: #7fb3d5;
     --scrim: rgb(0 0 0 / 0.55);
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%23a6a6a2' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
     --shadow-1: 0 1px 0 #0d0e0f, 0 2px 8px rgb(0 0 0 / 0.3);
     --shadow-2: 0 8px 28px rgb(0 0 0 / 0.5);
     color-scheme: dark;
@@ -121,6 +126,7 @@
   --c-due: #f0c26a;
   --c-event: #7fb3d5;
   --scrim: rgb(0 0 0 / 0.55);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%23a6a6a2' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
   --shadow-1: 0 1px 0 #0d0e0f, 0 2px 8px rgb(0 0 0 / 0.3);
   --shadow-2: 0 8px 28px rgb(0 0 0 / 0.5);
   color-scheme: dark;
@@ -240,7 +246,33 @@ textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--sp-1) var(--sp-2);
+  min-height: 32px;
+}
+
+/* One arrow for every select, in the thin line of the icons, in both themes. */
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+}
+
+input[type="file"]::file-selector-button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-1) var(--sp-3);
   min-height: 30px;
+  margin-right: var(--sp-2);
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--surface-2);
 }
 
 textarea {
@@ -258,6 +290,13 @@ label.field {
 label.field > :is(input, select, textarea) {
   color: var(--text);
   font-size: var(--fs-md);
+}
+
+/* A button or heading with an icon: the icon and the text share one line, at one distance. */
+.with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
 }
 
 .muted {

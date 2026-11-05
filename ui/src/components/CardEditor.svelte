@@ -330,12 +330,12 @@
           </label>
         </div>
         <div class="row">
-          <button onclick={suggest}><Icon name="clock" /> {t("card.suggest_slot")}</button>
+          <button class="with-icon" onclick={suggest}><Icon name="clock" />{t("card.suggest_slot")}</button>
           {#each slots as s (s.local)}
             <button class="chip-btn" onclick={() => schedule(s.local)}>{s.date} {s.time}</button>
           {/each}
           {#if pubAt && pubStatus !== "published"}
-            <button class="primary" onclick={() => schedule(pubAt)}>{t("card.schedule")}</button>
+            <button onclick={() => schedule(pubAt)}>{t("card.schedule")}</button>
           {/if}
         </div>
         <Problems problems={app.index?.readiness[id] ?? []} />
@@ -353,10 +353,10 @@
     {/if}
 
     {#if stored.board && brd?.kind === "content"}
-      <div class="row small">
+      <div class="row small links">
         {#each otherNetworks as n (n.id)}
           {#if !siblings.some((s) => s.network === n.id)}
-            <button class="ghost" onclick={() => duplicate(n.id)}><Icon name="arrow-left-right" /> {t("card.duplicate_for", { net: n.label })}</button>
+            <button class="ghost with-icon" onclick={() => duplicate(n.id)}><Icon name="arrow-left-right" />{t("card.duplicate_for", { net: n.label })}</button>
           {/if}
         {/each}
         {#each siblings as s (s.id)}
@@ -365,7 +365,7 @@
           </button>
         {/each}
         {#if article}
-          <button class="ghost" onclick={() => (app.openCard = article.id)}><Icon name="undo-2" /> {t("card.promotes", { title: article.title })}</button>
+          <button class="ghost with-icon" onclick={() => (app.openCard = article.id)}><Icon name="undo-2" />{t("card.promotes", { title: article.title })}</button>
         {/if}
       </div>
     {/if}
@@ -419,7 +419,7 @@
     <section class="assets">
       <div class="row between rule-heading">
         <h3>{t("card.assets")}</h3>
-        <button class="ghost" onclick={() => api.openAssets(id).catch(fail)}><Icon name="folder" /> {t("card.open_assets")}</button>
+        <button class="ghost with-icon" onclick={() => api.openAssets(id).catch(fail)}><Icon name="folder" />{t("card.open_assets")}</button>
       </div>
       {#if assets.length}
         <ul>
@@ -508,6 +508,8 @@
     font-weight: 600;
     border-color: transparent;
     background: transparent;
+    /* The title text lines up with the fields; the box of a hovered title reaches past it. */
+    margin-left: calc(-1 * (var(--sp-2) + 1px));
   }
 
   .title:hover,
@@ -568,6 +570,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--sp-3);
+  }
+
+  /* The invisible padding of the first ghost button would push its text off the edge of the fields. */
+  .links > .ghost:first-child {
+    margin-left: calc(-1 * (var(--sp-3) + 1px));
   }
 
   .chip-btn {

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { addDays, addMonths, longDate, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
 import type { AgendaItem, Today } from "./api";
 import { todaySummary } from "./summary";
+import { tn } from "./i18n";
+import { ptBR } from "./locales/pt-BR";
 import { charCount, postText, toggleTask } from "./markdown";
 
 describe("dates", () => {
@@ -32,7 +34,8 @@ describe("dates", () => {
 
   it("long date spells out the weekday and the month", () => {
     expect(longDate("2026-10-28")).toBe("Quarta-feira, 28 de outubro");
-    expect(longDate("2026-11-01")).toBe("Domingo, 1 de novembro");
+    expect(longDate("2026-11-01")).toBe("Domingo, 1º de novembro");
+    expect(longDate("2026-11-11")).toBe("Quarta-feira, 11 de novembro");
   });
 
   it("rescheduling keeps the time of day", () => {
@@ -69,8 +72,45 @@ describe("today summary", () => {
     expect(todaySummary(make([], 3, 0))).toBe("Três itens atrasados.");
   });
 
+  it("counts a late post of today once, not as a post and as overdue", () => {
+    const today = {
+      posts: [item("a"), item("b")],
+      overdue: [{ id: "a", kind: "publication" }, item("z")],
+      upcoming: [],
+    } as unknown as Today;
+    expect(todaySummary(today)).toBe("Dois posts para publicar e um item atrasado.");
+  });
+
+  it("keeps an overdue deadline on a card that also has a post today", () => {
+    // A card's publication and its deadline are two agenda items with the same card id.
+    const today = {
+      posts: [{ id: "a", kind: "publication", done: false }],
+      overdue: [{ id: "a", kind: "due" }],
+      upcoming: [],
+    } as unknown as Today;
+    expect(todaySummary(today)).toBe("Um post para publicar e um item atrasado.");
+  });
+
+  it("uses the singular for exactly one upcoming item", () => {
+    expect(todaySummary(make([], 0, 1))).toBe("Um compromisso nos próximos 7 dias.");
+  });
+
   it("says so when nothing is pending", () => {
     expect(todaySummary(make([item("a", true)], 0, 0))).toBe("Nada pendente por aqui.");
+  });
+});
+
+describe("plurals", () => {
+  it("picks the singular for exactly one", () => {
+    expect(tn("cadence.missing", 1)).toBe("Falta 1 para a meta.");
+    expect(tn("cadence.missing", 2)).toBe("Faltam 2 para a meta.");
+    expect(tn("import.apply", 1)).toBe("Importar 1 post");
+    expect(tn("import.apply", 3)).toBe("Importar 3 posts");
+    expect(tn("insights.summary", 1, { avg: "2.0" })).toBe("1 post, média de 2.0 de engajamento");
+  });
+
+  it("leaves no optional plural left in a message", () => {
+    expect(Object.entries(ptBR).filter(([, v]) => /\(s\)|\(es\)/.test(v))).toEqual([]);
   });
 });
 

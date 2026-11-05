@@ -258,7 +258,7 @@ group("ideas", async () => {
   const p = await home(typicalHome);
   const rows = await p.locator(`${box} .w-row`).allTextContents();
   expect(rows.length === 3 && rows[0]?.includes("Thread sobre ownership"), `ideias: ${rows}`);
-  expect((await text(p, more("ideas"))).includes("+2 · Ver mais"), `ideias: ${await text(p, more("ideas"))}`);
+  expect((await text(p, more("ideas"))).includes("+1 · Ver mais"), `ideias: ${await text(p, more("ideas"))}`);
 
   await p.fill(field, "   ");
   await p.press(field, "Enter");

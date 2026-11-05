@@ -52,7 +52,7 @@ Depois de atualizar o Pauta, recompile o binário (`cargo build --release -p pau
 
 ### Atalhos
 
-`Ctrl+K` abre a paleta, `Alt+1…5` troca de tela (Hoje, Quadros, Calendário, Ritmo, Configurações) e `Ctrl+Shift+I` captura uma ideia. No quadro, as setas mudam o foco, `Alt+setas` movem o cartão e `Enter` abre. O atalho global `Ctrl+Alt+P` só funciona no X11; no Wayland, crie um atalho do GNOME para `pauta --capture`.
+`Ctrl+K` abre a paleta, `Alt+1…5` troca de tela (Início, Quadros, Calendário, Ritmo, Configurações) e `Ctrl+Shift+I` captura uma ideia. No quadro, as setas mudam o foco, `Alt+setas` movem o cartão e `Enter` abre. O atalho global `Ctrl+Alt+P` só funciona no X11; no Wayland, crie um atalho do GNOME para `pauta --capture`.
 
 ## Desenvolvimento
 
@@ -73,15 +73,16 @@ Os ícones são do [Lucide](https://lucide.dev) (ISC), copiados em `ui/src/compo
 
 ## Estado
 
-A versão 0 (marcos 0 a 5 do documento de design) está pronta e foi revisada pelo autor, incluindo o uso real do conector MCP a partir do Claude Code. O marco 6 e os pendentes da versão 0 foram feitos em seguida:
+A versão 0 (marcos 0 a 5 do documento de design) está pronta e foi revisada pelo autor, incluindo o uso real do conector MCP a partir do Claude Code. O marco 6, os pendentes da versão 0 e o marco 7 foram feitos em seguida:
 
 | Item | O que há |
 | --- | --- |
-| Constância (seção 10) | Meta de cadência por rede (ex.: 2 por semana) com progresso na tela Hoje; tela **Ritmo** com histórico por semana e por mês, que continua contando posts arquivados; "parado" passa a medir o tempo na mesma coluna (`column_since`), não a última edição |
+| Constância (seção 10) | Meta de cadência por rede (ex.: 2 por semana) com progresso no Hoje e no Início; tela **Ritmo** com histórico por semana e por mês, que continua contando posts arquivados; "parado" passa a medir o tempo na mesma coluna (`column_since`), não a última edição |
 | Fechando a versão 0 | ESLint; verificação de acessibilidade com axe em todas as telas (corrigiu problemas reais no calendário); teste de regressão do salvamento automático; adiar um lembrete para dentro do horário de silêncio agora espera o fim dele; visão semanal em grade de horas, com arrastar para reagendar; suíte de ponta a ponta com `tauri-driver` |
 | MCP: recursos e prompts (11.6) | Seis recursos e quatro prompts, com os dados já embutidos |
 | Resultados e `.ics` (17.1, 17.3) | Números de alcance e engajamento digitados no cartão publicado (sem API de rede), com o que eles dizem sobre os dias da semana; importação desses números de um CSV exportado da rede (colunas reconhecidas por nome, com prévia antes de gravar; ADR 0008); exportação do calendário em `.ics`, com os lembretes como alarmes |
 | Arte com o Claude Design | Pedido de arte registrado no cartão, texto pronto para colar, anexos, estado e verificação de "pronto para postar" (ADR 0007) |
+| Tela Início (marco 7) | Primeira tela do app, com sete widgets (Brief, Postar hoje, Avisos, Agenda, Ritmo, Ideias e Projetos) que cabem na janela sem rolagem; o Hoje virou a aba do Calendário; o app volta ao Início na primeira abertura de cada novo dia; composta na interface, sem comando novo (ADR 0009) |
 
 Limites conhecidos:
 

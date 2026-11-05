@@ -2,6 +2,7 @@
 // data folder changes (our writes, the MCP server, or an external editor).
 import { listen } from "@tauri-apps/api/event";
 import { api, errorMessage, type Board, type Card, type Index, type Status, type Today } from "./api";
+import { shouldReturnHome } from "./home/return";
 
 export type View = "home" | "boards" | "calendar" | "rhythm" | "settings";
 export type CalendarMode = "today" | "month" | "week" | "agenda";
@@ -96,10 +97,32 @@ async function refreshToday() {
   }
 }
 
+/** The last day the window was in use; the first opening of a later day returns to Início. */
+let seenDate: string | null = null;
+
+/** The window gained focus or became visible. */
+async function onOpened() {
+  await refreshToday();
+  const date = app.today?.date;
+  if (!date) return;
+  const busy = app.openCard !== null || app.openEvent !== null || app.paletteOpen || app.trashOpen;
+  if (shouldReturnHome(seenDate, date, busy)) app.view = "home";
+  // Also when busy: the day counts as seen, so closing the editor later does not trigger the return.
+  seenDate = date;
+}
+
 export async function start() {
   await reload();
-  setInterval(() => document.visibilityState === "visible" && refreshToday(), 60_000);
-  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && refreshToday());
+  seenDate = app.today?.date ?? null;
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    // Whoever crosses midnight while working must not be sent home when switching windows later.
+    refreshToday().then(() => {
+      if (document.hasFocus() && app.today) seenDate = app.today.date;
+    });
+  }, 60_000);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && onOpened());
+  window.addEventListener("focus", onOpened);
   await listen("pauta://changed", () => reload());
   // The tray and the notifications still ask for "today", which is no longer a view.
   await listen<string>("pauta://navigate", (e) => (e.payload === "today" ? openToday() : (app.view = e.payload as View)));

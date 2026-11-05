@@ -52,9 +52,10 @@ const nav = (label) => driver.findElement(By.xpath(`//nav//button[contains(., "$
 const columnOf = (name) => By.xpath(`//section[contains(@class,"column")][.//h3[normalize-space()="${name}"]]`);
 
 try {
-  await step("starts on Today with the sample data", async () => {
+  await step("starts on Início with the sample data", async () => {
     await $("nav");
-    await driver.wait(until.elementLocated(By.xpath('//h1[normalize-space()="Hoje"]')), 10000);
+    // 08:00:30 on the simulated clock, so the greeting is the morning one.
+    await driver.wait(until.elementLocated(By.xpath('//h1[normalize-space()="Bom dia."]')), 10000);
     // Under the real CSP, which the browser checks do not have.
     const fonts = await driver.executeAsyncScript((done) =>
       document.fonts.ready.then(() => done([...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family))),

@@ -3,7 +3,8 @@
 //
 //   pnpm build && node ui/e2e/home.mjs
 //   ONLY=ideas,projects node ui/e2e/home.mjs
-import { finish, newPage, problems } from "./harness.mjs";
+import path from "node:path";
+import { finish, newPage, problems, shots } from "./harness.mjs";
 import { allPostedHome, emptyHome, fullHome, lateHome, noContentBoardHome, noPostsHome, typicalHome } from "./home-fixtures.mjs";
 
 const only = process.env.ONLY?.split(",");
@@ -95,6 +96,7 @@ group("fit", async () => {
       });
       return { y: c.scrollHeight - c.clientHeight, x: c.scrollWidth - c.clientWidth, cols, spill: spill.slice(0, 5), widgets: widgets.length };
     });
+    if (shots) await p.screenshot({ path: path.join(shots, `home-full-${width}x${height}.png`) });
     expect(m.widgets === 6, `${width}px: ${m.widgets} widgets besides the Brief`);
     expect(m.y <= 0, `${width}x${height}: the worst day needs ${m.y}px of scrolling`);
     expect(m.x <= 0, `${width}x${height}: overflows sideways by ${m.x}px`);

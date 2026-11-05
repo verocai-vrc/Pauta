@@ -3,7 +3,8 @@
 import { listen } from "@tauri-apps/api/event";
 import { api, errorMessage, type Board, type Card, type Index, type Status, type Today } from "./api";
 
-export type View = "today" | "boards" | "calendar" | "rhythm" | "settings";
+export type View = "home" | "boards" | "calendar" | "rhythm" | "settings";
+export type CalendarMode = "today" | "month" | "week" | "agenda";
 
 export interface Toast {
   id: number;
@@ -16,7 +17,8 @@ export const app = $state({
   index: null as Index | null,
   today: null as Today | null,
   loadError: null as string | null,
-  view: "today" as View,
+  view: "home" as View,
+  calendarMode: "month" as CalendarMode,
   boardId: null as string | null,
   /** Card open in the side editor. */
   openCard: null as string | null,
@@ -71,6 +73,12 @@ export function networkLabel(id: string | null | undefined): string {
   return app.index?.config.networks.find((n) => n.id === id)?.label ?? id;
 }
 
+/** The day in detail: a tab of the calendar since Início became the first screen. */
+export function openToday() {
+  app.calendarMode = "today";
+  app.view = "calendar";
+}
+
 export function openItem(kind: "card" | "event" | string, id: string) {
   if (kind === "event") app.openEvent = id;
   else app.openCard = id;
@@ -93,6 +101,7 @@ export async function start() {
   setInterval(() => document.visibilityState === "visible" && refreshToday(), 60_000);
   document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && refreshToday());
   await listen("pauta://changed", () => reload());
-  await listen<string>("pauta://navigate", (e) => (app.view = e.payload as typeof app.view));
+  // The tray and the notifications still ask for "today", which is no longer a view.
+  await listen<string>("pauta://navigate", (e) => (e.payload === "today" ? openToday() : (app.view = e.payload as View)));
   await listen<{ kind: string; id: string }>("pauta://open", (e) => openItem(e.payload.kind, e.payload.id));
 }

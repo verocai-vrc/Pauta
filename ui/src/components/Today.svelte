@@ -42,14 +42,14 @@
 <div class="today">
   <header class="indent">
     {#if date}<div class="kicker">{longDate(date)}</div>{/if}
-    <h1 class="display">{t("today.title")}</h1>
+    <h2 class="display">{t("today.title")}</h2>
     {#if today}<p class="dek">{todaySummary(today)}</p>{/if}
   </header>
 
   {#if today}
     {#if today.invalid_files > 0}
       <section class="notice danger indent" aria-labelledby="inv">
-        <h2 id="inv">{tn("today.invalid", today.invalid_files)}</h2>
+        <h3 id="inv">{tn("today.invalid", today.invalid_files)}</h3>
         <ul>
           {#each app.index?.invalid ?? [] as f (f.path)}
             <li>
@@ -62,9 +62,9 @@
     {/if}
 
     <section aria-labelledby="post-today">
-      <h2 class="section-label indent" id="post-today">
+      <h3 class="section-label indent" id="post-today">
         {t("today.post_today")} <span class="n">{today.posts.length}</span>
-      </h2>
+      </h3>
       {#if today.posts.length === 0}
         <p class="muted indent">{t("today.no_posts")}</p>
       {:else}
@@ -91,7 +91,7 @@
 
     {#if today.cadence.length}
       <section aria-labelledby="cadence">
-        <h2 class="section-label indent" id="cadence">{t("cadence.title")}</h2>
+        <h3 class="section-label indent" id="cadence">{t("cadence.title")}</h3>
         <div class="entry">
           <div class="gut"></div>
           <div class="meters">
@@ -107,9 +107,9 @@
 
     {#if today.overdue.length}
       <section aria-labelledby="overdue">
-        <h2 class="section-label indent" id="overdue">
+        <h3 class="section-label indent" id="overdue">
           {t("today.overdue")} <span class="n">{today.overdue.length}</span>
-        </h2>
+        </h3>
         <ul class="entries">
           {#each today.overdue as i (i.kind + i.id)}
             <li class="entry">
@@ -133,7 +133,7 @@
         class="notice warn indent"
         aria-label={t("today.empty_queue", { net: q.label, days: q.days })}
       >
-        <h2><Icon name="triangle-alert" size={15} />{t("today.empty_queue", { net: q.label, days: q.days })}</h2>
+        <h3><Icon name="triangle-alert" size={15} />{t("today.empty_queue", { net: q.label, days: q.days })}</h3>
         {#if q.candidates.length}
           <p class="small">{t("today.candidates")}</p>
           <div class="row">
@@ -148,9 +148,9 @@
     {/each}
 
     <section aria-labelledby="upcoming">
-      <h2 class="section-label indent" id="upcoming">
+      <h3 class="section-label indent" id="upcoming">
         {t("today.upcoming")} <span class="n">{today.upcoming.length}</span>
-      </h2>
+      </h3>
       {#if today.upcoming.length === 0}
         <p class="muted indent">{t("today.no_upcoming")}</p>
       {:else}
@@ -176,7 +176,7 @@
 
     {#if today.stale.length}
       <section aria-labelledby="stale">
-        <h2 class="section-label indent" id="stale">{t("today.stale")}</h2>
+        <h3 class="section-label indent" id="stale">{t("today.stale")}</h3>
         <ul class="entries ledger">
           {#each today.stale as c (c.id)}
             <li class="entry">
@@ -228,7 +228,7 @@
     margin-left: calc(var(--gut) + var(--gap));
   }
 
-  header h1 {
+  header h2 {
     margin: 2px 0;
   }
 
@@ -238,7 +238,7 @@
     gap: var(--sp-2);
   }
 
-  h2 {
+  h3 {
     margin: 0;
   }
 
@@ -409,7 +409,7 @@
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
   }
 
-  .notice h2 {
+  .notice h3 {
     display: flex;
     align-items: center;
     gap: var(--sp-2);

@@ -4,6 +4,7 @@
 //   pnpm build && pnpm test:a11y            # fails on any violation
 //   SHOTS=/some/dir pnpm test:a11y          # also keeps the screenshots
 import { audit, finish, newPage, problems } from "./harness.mjs";
+import { emptyHome, fullHome } from "./home-fixtures.mjs";
 
 // The fixtures only have a finished post, so this fills every section of Today, with titles long
 // enough to wrap. Runs in the browser as an init script.
@@ -32,9 +33,17 @@ const fullToday = () => {
   window.__override = (cmd) => (cmd === "get_today" ? today : undefined);
 };
 
+const openHoje = async (p) => {
+  await p.click("nav >> text=Calendário");
+  await p.click("button:text-is('Hoje')");
+};
+
 const screens = [
-  ["today", async (p) => { await p.waitForSelector("text=Seu ritmo"); }],
-  ["today-full", async (p) => { await p.waitForSelector("text=Entrega parcial"); }, fullToday],
+  ["home", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }],
+  ["home-full", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }, fullHome],
+  ["home-empty", async (p) => { await p.waitForSelector("[data-widget=ideas]"); }, emptyHome],
+  ["calendar-today", async (p) => { await openHoje(p); await p.waitForSelector("text=Seu ritmo"); }],
+  ["calendar-today-full", async (p) => { await openHoje(p); await p.waitForSelector("text=Entrega parcial"); }, fullToday],
   ["boards", async (p) => { await p.click("nav >> text=Quadros"); await p.waitForSelector("[data-id]"); }],
   ["card-editor", async (p) => { await p.click("nav >> text=Quadros"); await p.click('[data-id="01JBX3K9Q2AB"]'); await p.waitForSelector("aside.editor"); }],
   ["card-editor-art", async (p) => { await p.click("nav >> text=Quadros"); await p.click('[data-id="01FIXTUREART1"]'); await p.waitForSelector("text=Arquivos de arte (2)"); }],
@@ -141,7 +150,7 @@ const capture = await check.evaluate(() => {
 });
 if (capture.lines !== 1) problems.push(`capture label breaks into ${capture.lines} lines`);
 if (!capture.inside) problems.push("capture shortcut falls outside the button");
-for (const [key, label] of [["1", "Hoje"], ["2", "Quadros"], ["3", "Calendário"], ["4", "Ritmo"], ["5", "Configurações"]]) {
+for (const [key, label] of [["1", "Início"], ["2", "Quadros"], ["3", "Calendário"], ["4", "Ritmo"], ["5", "Configurações"]]) {
   await check.keyboard.press(`Alt+${key}`);
   const current = await check.locator('nav [aria-current="page"]').textContent();
   if (!current?.includes(label)) problems.push(`Alt+${key} did not open ${label}: ${current}`);
@@ -242,6 +251,8 @@ if (sliced) problems.push(`calendar week: ${sliced} line(s) of a title cut by th
 await timed.close();
 
 const narrow = await newPage("light", { init: fullToday });
+// Before narrowing: at this width the sidebar shows only icons.
+await openHoje(narrow);
 await narrow.setViewportSize({ width: 720, height: 900 });
 await narrow.waitForSelector("text=Entrega parcial");
 const overflow = await narrow.evaluate(() => {
@@ -251,7 +262,7 @@ const overflow = await narrow.evaluate(() => {
 if (overflow > 0) problems.push(`today at 720px overflows by ${overflow}px`);
 // The counts do not fuse with the section names, and are not dimmed by opacity.
 for (const name of ["Postar hoje 2", "Atrasados 1", "Próximos 7 dias 4"]) {
-  if ((await narrow.getByRole("heading", { name, exact: true, level: 2 }).count()) !== 1) problems.push(`today: no heading named "${name}"`);
+  if ((await narrow.getByRole("heading", { name, exact: true, level: 3 }).count()) !== 1) problems.push(`today: no heading named "${name}"`);
 }
 const counts = await narrow.evaluate(() =>
   [...document.querySelectorAll(".section-label .n")].map((n) => getComputedStyle(n).opacity),

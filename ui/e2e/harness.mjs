@@ -62,13 +62,24 @@ export async function newPage(scheme = "light", { init } = {}) {
   if (init) await page.addInitScript(init);
   await page.addInitScript((data) => {
     let cb = 0;
+    const callbacks = {};
+    const listeners = {};
+    window.__fixtures = data;
+    // Delivers a backend event to the app, as the tray and the notifications do.
+    window.__emit = (event, payload) => (listeners[event] ?? []).forEach((id) => callbacks[id]({ event, id, payload }));
     window.__TAURI_INTERNALS__ = {
-      transformCallback: () => ++cb,
+      transformCallback: (f) => {
+        callbacks[++cb] = f;
+        return cb;
+      },
       unregisterCallback: () => {},
       invoke: async (cmd, args) => {
         const over = window.__override?.(cmd, args);
         if (over !== undefined) return over;
         switch (cmd) {
+          case "plugin:event|listen":
+            (listeners[args.event] ??= []).push(args.handler);
+            return args.handler;
           case "app_status": return { root: "/home/arthur/Documentos/Pauta", suggested: "", error: null };
           case "get_index": return data.index;
           case "get_today": return data.today;

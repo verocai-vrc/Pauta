@@ -5,7 +5,7 @@
   import { app, start, type View } from "./lib/store.svelte";
   import Icon, { type IconName } from "./components/Icon.svelte";
   import Setup from "./components/Setup.svelte";
-  import TodayView from "./components/Today.svelte";
+  import Home from "./components/Home.svelte";
   import Boards from "./components/Boards.svelte";
   import Calendar from "./components/Calendar.svelte";
   import Rhythm from "./components/Rhythm.svelte";
@@ -17,7 +17,7 @@
   import Toasts from "./components/Toasts.svelte";
 
   const views: { id: View; key: string; icon: IconName; shortcut: string }[] = [
-    { id: "today", key: "nav.today", icon: "sun", shortcut: "Alt+1" },
+    { id: "home", key: "nav.home", icon: "house", shortcut: "Alt+1" },
     { id: "boards", key: "nav.boards", icon: "columns-3", shortcut: "Alt+2" },
     { id: "calendar", key: "nav.calendar", icon: "calendar", shortcut: "Alt+3" },
     { id: "rhythm", key: "nav.rhythm", icon: "chart-column", shortcut: "Alt+4" },
@@ -26,8 +26,10 @@
   const SEARCH_SHORTCUT = "Ctrl+K";
   const CAPTURE_SHORTCUT = "Ctrl+Shift+I";
 
-  /** The reading screens sit on ruled paper; the boards, the calendar and the editor do not. */
-  const paperViews: View[] = ["today", "rhythm", "settings"];
+  /** The reading screens sit on ruled paper; Início, the boards, the calendar grids and the editor do not. */
+  const paper = $derived(
+    app.view === "rhythm" || app.view === "settings" || (app.view === "calendar" && app.calendarMode === "today"),
+  );
 
   /** `aria-keyshortcuts` spells the modifier "Control". */
   const aria = (shortcut: string) => shortcut.replace("Ctrl", "Control");
@@ -113,7 +115,7 @@
       </button>
     </nav>
 
-    <main class="content" class:paper={paperViews.includes(app.view)}>
+    <main class="content" class:paper>
       {#if app.loadError}
         <div class="load-error" role="alert">
           <strong>{t("app.load_error")}</strong>
@@ -121,8 +123,8 @@
         </div>
       {/if}
       {#if app.index}
-        {#if app.view === "today"}
-          <TodayView />
+        {#if app.view === "home"}
+          <Home />
         {:else if app.view === "boards"}
           <Boards />
         {:else if app.view === "calendar"}

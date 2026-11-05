@@ -12,7 +12,7 @@
     "tauri": "tauri",
     "test:a11y": "node ui/e2e/screens.mjs",
     "lint": "eslint ui eslint.config.js",
-    "test:browser": "node ui/e2e/autosave.mjs && node ui/e2e/screens.mjs",
+    "test:browser": "node ui/e2e/autosave.mjs && node ui/e2e/screens.mjs && node ui/e2e/home.mjs",
     "test:e2e": "node ui/e2e/tauri.mjs"
   },
   "devDependencies": {

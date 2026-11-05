@@ -4,15 +4,15 @@
     addDays, addMonths, hm, longDate, monthGrid, monthTitle, moveToDay, relativeDay, shortDate, weekDays, WEEKDAYS_SHORT,
   } from "../lib/dates";
   import { t } from "../lib/i18n";
-  import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
+  import { app, board, fail, networkLabel, openItem, type CalendarMode } from "../lib/store.svelte";
   import Icon, { type IconName } from "./Icon.svelte";
   import Modal from "./Modal.svelte";
+  import TodayView from "./Today.svelte";
   import WeekGrid from "./WeekGrid.svelte";
 
-  type Mode = "month" | "week" | "agenda";
   const today = $derived(app.today?.date ?? new Date().toISOString().slice(0, 10));
 
-  let mode = $state<Mode>("month");
+  const mode = $derived(app.calendarMode);
   let cursor = $state("");
   let items = $state<AgendaItem[]>([]);
   let fBoard = $state("");
@@ -31,7 +31,7 @@
     !cursor ? [] : mode === "month" ? monthGrid(cursor) : mode === "week" ? weekDays(cursor) : [],
   );
   const range = $derived.by(() => {
-    if (!cursor) return null;
+    if (!cursor || mode === "today") return null;
     if (mode === "agenda") return { from: cursor, to: addDays(cursor, 60) };
     return { from: days[0], to: days[days.length - 1] };
   });
@@ -166,20 +166,22 @@
   </button>
 {/snippet}
 
-<div class="calendar">
+<div class="calendar" class:day={mode === "today"}>
   <header class="row">
     <h1>{t("cal.title")}</h1>
     <div class="row" role="group" aria-label={t("cal.view")}>
-      {#each ["month", "week", "agenda"] as m (m)}
-        <button class:active={mode === m} aria-pressed={mode === m} onclick={() => (mode = m as Mode)}>{t(`cal.${m}`)}</button>
+      {#each ["today", "month", "week", "agenda"] as m (m)}
+        <button class:active={mode === m} aria-pressed={mode === m} onclick={() => (app.calendarMode = m as CalendarMode)}>{t(`cal.${m}`)}</button>
       {/each}
     </div>
-    <div class="row">
-      <button class="with-icon" aria-label={t("cal.prev")} onclick={() => go(-1)}><Icon name="chevron-left" /></button>
-      <button onclick={() => (cursor = today)}>{t("cal.today")}</button>
-      <button class="with-icon" aria-label={t("cal.next")} onclick={() => go(1)}><Icon name="chevron-right" /></button>
-      <strong class="period" aria-live="polite">{title}</strong>
-    </div>
+    {#if mode !== "today"}
+      <div class="row">
+        <button class="with-icon" aria-label={t("cal.prev")} onclick={() => go(-1)}><Icon name="chevron-left" /></button>
+        <button onclick={() => (cursor = today)}>{t("cal.go_today")}</button>
+        <button class="with-icon" aria-label={t("cal.next")} onclick={() => go(1)}><Icon name="chevron-right" /></button>
+        <strong class="period" aria-live="polite">{title}</strong>
+      </div>
+    {/if}
     <span class="spacer"></span>
     <button
       class="with-icon"
@@ -190,21 +192,25 @@
     >
   </header>
 
-  <div class="filters row" role="group" aria-label={t("cal.filters")}>
-    {#each ["publication", "due", "event"] as k (k)}
-      <label class="row small"><input type="checkbox" bind:checked={fKinds[k as AgendaKind]} /> {t(`cal.kind_${k}`)}</label>
-    {/each}
-    <select bind:value={fBoard} aria-label={t("cal.filter_board")}>
-      <option value="">{t("cal.all_boards")}</option>
-      {#each app.index?.boards ?? [] as b (b.id)}<option value={b.id}>{b.name}</option>{/each}
-    </select>
-    <select bind:value={fNetwork} aria-label={t("cal.filter_network")}>
-      <option value="">{t("cal.all_networks")}</option>
-      {#each app.index?.config.networks ?? [] as n (n.id)}<option value={n.id}>{n.label}</option>{/each}
-    </select>
-  </div>
+  {#if mode !== "today"}
+    <div class="filters row" role="group" aria-label={t("cal.filters")}>
+      {#each ["publication", "due", "event"] as k (k)}
+        <label class="row small"><input type="checkbox" bind:checked={fKinds[k as AgendaKind]} /> {t(`cal.kind_${k}`)}</label>
+      {/each}
+      <select bind:value={fBoard} aria-label={t("cal.filter_board")}>
+        <option value="">{t("cal.all_boards")}</option>
+        {#each app.index?.boards ?? [] as b (b.id)}<option value={b.id}>{b.name}</option>{/each}
+      </select>
+      <select bind:value={fNetwork} aria-label={t("cal.filter_network")}>
+        <option value="">{t("cal.all_networks")}</option>
+        {#each app.index?.config.networks ?? [] as n (n.id)}<option value={n.id}>{n.label}</option>{/each}
+      </select>
+    </div>
+  {/if}
 
-  {#if mode === "agenda"}
+  {#if mode === "today"}
+    <TodayView />
+  {:else if mode === "agenda"}
     <div class="agenda">
       {#if agendaDays.length === 0}<p class="muted">{t("cal.nothing")}</p>{/if}
       {#each agendaDays as [day, list] (day)}
@@ -281,7 +287,7 @@
                 class="more ghost small"
                 onclick={() => {
                   cursor = day;
-                  mode = "week";
+                  app.calendarMode = "week";
                 }}>+{list.length - 4}</button
               >
             {/if}
@@ -321,6 +327,23 @@
     flex-direction: column;
     gap: var(--sp-3);
     height: 100%;
+  }
+
+  /* Hoje keeps its own margins and scrolls with the page. Its ruled paper starts below the toolbar. */
+  .calendar.day {
+    height: auto;
+    min-height: 100%;
+    padding: 0;
+    gap: 0;
+  }
+
+  .calendar.day > header {
+    padding: var(--sp-4);
+    background: var(--bg);
+  }
+
+  .calendar.day > :global(.today) {
+    flex: 1;
   }
 
   .spacer {

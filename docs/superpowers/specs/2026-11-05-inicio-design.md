@@ -43,7 +43,8 @@ O protótipo fica em `.superpowers/sdd/2026-11-05-inicio/mock/` (fora do Git).
 O app guarda `seenDate`, o último dia em que a janela esteve em uso.
 
 - Ao receber o foco ou ficar visível, atualiza `app.today` e compara. Se o dia mudou, volta ao Início. Depois disso, `seenDate` recebe o dia atual.
-- Com um editor, modal, paleta ou lixeira aberta, não navega, para não tirar o autor do que está fazendo. `seenDate` é atualizado do mesmo jeito.
+- Com um editor, modal (qualquer `dialog` aberto), paleta ou lixeira aberta, não navega, para não tirar o autor do que está fazendo. `seenDate` é atualizado do mesmo jeito.
+- Um pedido explícito vence: `pauta://navigate`, da bandeja ou da notificação, cancela a volta dessa abertura, em qualquer ordem de chegada.
 - A cada minuto, se a janela tiver o foco, `seenDate` acompanha o dia. Quem atravessa a meia-noite trabalhando não é levado ao Início ao trocar de janela.
 
 A decisão fica na função pura `shouldReturnHome(seen, date, busy)`.
@@ -93,10 +94,10 @@ Toda linha clicável é um botão `ghost` que ocupa a linha, com `hover` em `--s
 
 ### 5.1 Brief
 
-Cartão de largura total, em duas partes separadas por uma linha vertical `--margin-line`, que lembra a margem do caderno.
+Cartão de largura total, em duas partes separadas por uma linha vertical `--margin-line`, que lembra a margem do caderno. A linha vai de cima a baixo do cartão e fica sobre a borda da coluna do meio.
 
 - À esquerda: `.kicker` com `longDate(date)` e, abaixo, um `h1.display` com a saudação. É o único `h1` da tela.
-- À direita: `.dek` com `todaySummary(today)` e, abaixo, a linha do próximo compromisso, em `--fs-sm`, peso 600. Sem próximo compromisso, a linha some.
+- À direita: `.dek` com `todaySummary(today)` e, abaixo, a linha do próximo compromisso, em `--fs-sm`, peso 600, em uma linha só. Sem próximo compromisso, a linha some.
 
 **Saudação**, por `today.time`: de 05:00 a 11:59, "Bom dia."; de 12:00 a 17:59, "Boa tarde."; nos demais horários, "Boa noite."
 
@@ -106,7 +107,7 @@ Cartão de largura total, em duas partes separadas por uma linha vertical `--mar
 
 Lista `today.posts`. A contagem é a dos posts pendentes. "Ver mais" abre o Hoje.
 
-- **Próximo post:** o primeiro pendente. Mostra a hora em serifa, a rede, o título em serifa (até duas linhas), os problemas de prontidão em uma linha curta ("falta imagem · sem texto", com `triangle-alert` em `--warning`) e `PostActions compact`. O texto longo de `Problems` não cabe em uma coluna estreita; ele continua no Hoje e no editor. Se o horário passou, a hora fica em `--danger` e aparece o selo "atrasado".
+- **Próximo post:** o primeiro pendente. Mostra a hora em serifa, a rede, o título em serifa (até duas linhas), os problemas de prontidão em uma linha curta ("falta imagem · sem texto", com `triangle-alert` em `--warning`) e `PostActions compact`. O texto longo de `Problems` não cabe em uma coluna estreita; ele continua no Hoje e no editor. Neste cartão, os botões de `PostActions` não têm ícones, como no protótipo. Uma linha fina separa o próximo post dos demais. Se o horário passou, a hora fica em `--danger` e aparece o selo "atrasado".
 - **Demais:** os outros pendentes e depois os publicados, cada um em uma linha com hora, rede e título. O publicado leva `check` e texto apagado.
 - **Sem posts hoje:** "Nada para postar hoje." e, abaixo, o próximo post da agenda ("Próximo post: {quando}"), se houver.
 - **Tudo publicado:** "Tudo publicado hoje." e as linhas dos publicados.
@@ -121,7 +122,7 @@ A lista é montada nesta ordem:
 | 2 | Cada item de `today.overdue`, com o título e o dia à direita | `triangle-alert` em `--danger` | Abre o cartão |
 | 3 | Cada post pendente até `date + 3` com problema de prontidão | `triangle-alert` em `--warning` | Abre o cartão |
 | 4 | Cada fila vazia | `triangle-alert` em `--warning` | Hoje |
-| 5 | Cartões parados, uma linha com o total | `clock` apagado | Hoje |
+| 5 | Cartões parados, uma linha com o total. O backend manda no máximo 10; com 10, o texto é "10 ou mais cartões parados" | `clock` apagado | Hoje |
 
 - Em 2, sai o post de hoje que está em `today.posts` e pendente, porque Postar hoje já o mostra. Prazos continuam, mesmo que sejam do mesmo cartão.
 - Em 3, sai o próximo post de Postar hoje, porque ele já mostra os seus problemas. Se houver mais de um problema, a linha mostra o primeiro.
@@ -136,12 +137,12 @@ A lista é montada nesta ordem:
 - Evento que começou antes de hoje entra em Hoje.
 - Agrupa por dia, com o rótulo de `relativeDay` e inicial maiúscula. O rótulo de hoje fica em `--accent`.
 - Cada linha: hora (vazia em item de dia inteiro), marca do tipo (`flag` para prazo, `diamond` para evento, ponto na cor da rede para post) e título.
-- Sem itens: "Nada nos próximos 7 dias."
+- Sem itens: "Nada nos próximos 7 dias." Enquanto a agenda não chegou, o widget não diz que está vazio.
 - "Ver mais" abre o Calendário em `agenda`.
 
 ### 5.5 Ritmo
 
-Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Nesse modo, são no máximo seis pontos, em uma linha só, seguidos de "…"; o número exato está no texto. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
+Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Nesse modo, são no máximo seis pontos, em uma linha só, seguidos de "…"; com meta acima de cinco, os pontos ficam menores. O número exato está no texto. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
 
 ### 5.6 Ideias
 
@@ -169,7 +170,7 @@ Cada projeto mostra o nome (botão que abre o quadro) e "atualizado hoje", "atua
 
 **Próximo:** a primeira opção que existir:
 
-1. O item datado mais próximo do projeto: o prazo de um cartão não concluído, inclusive atrasado, ou um evento de hoje em diante com `links.board` igual ao quadro. Texto: "{título} · {dia}".
+1. O item datado mais próximo do projeto: o prazo de um cartão não concluído, inclusive atrasado, ou um evento em andamento ou de hoje em diante com `links.board` igual ao quadro. Texto: "{título} · {dia}".
 2. O primeiro cartão ativo: colunas da mais avançada para a menos avançada, sem caixa de entrada e sem concluídos; dentro da coluna, por `rank`.
 3. O primeiro cartão da caixa de entrada, por `rank`.
 4. "Nada planejado".
@@ -228,6 +229,7 @@ A tela é composta na interface, a partir do que o backend já entrega (`get_ind
 | `home.warn_queue` | {net}: nada agendado em {days} dias |
 | `home.warn_stale_one` | {n} cartão parado |
 | `home.warn_stale_other` | {n} cartões parados |
+| `home.warn_stale_many` | {n} ou mais cartões parados |
 | `home.problem_no_text` | sem texto |
 | `home.problem_over_limit` | texto acima do limite |
 | `home.problem_media_missing` | falta imagem |

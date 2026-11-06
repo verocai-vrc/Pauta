@@ -52,8 +52,8 @@ jobs:
       - run: cargo test --workspace
 
   e2e:
-    # The real app driven through tauri-driver. Not yet run on a machine of ours:
-    # WebKitWebDriver is not installable on the development box, so the first CI run is the first run.
+    # The real app driven through tauri-driver. WebKitWebDriver is not installable on the
+    # development box, so this job is the only place the suite runs.
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -75,8 +75,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: cargo build -p pauta-app
+      # Not plain `cargo build`: that makes a dev binary, which loads devUrl (no server here)
+      # instead of the embedded UI. --debug keeps debug_assertions, needed for PAUTA_NOW.
+      - run: pnpm tauri build --debug --no-bundle
 
       - name: End-to-end
         run: xvfb-run -a dbus-run-session -- pnpm test:e2e

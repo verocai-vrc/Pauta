@@ -40,8 +40,17 @@ const driver = await new Builder()
   .build();
 
 const failures = [];
+// A WebDriver command can block forever when the page stops answering, so nothing here waits unbounded.
+const bounded = (promise, ms, what) => {
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} still running after ${ms / 1000} s`)), ms);
+  });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+};
+const mark = (what) => console.log(`     ${what}`);
 const pageState = () =>
-  driver
+  bounded(driver
     .executeScript(() =>
       JSON.stringify({
         focus: document.activeElement?.tagName,
@@ -51,10 +60,10 @@ const pageState = () =>
         toasts: [...document.querySelectorAll('[role="status"], [role="alert"]')].map((t) => t.textContent.trim()),
       }),
     )
-    .catch((e) => `unavailable (${e.name})`);
+    , 5000, "page state").catch((e) => `unavailable (${e.message})`);
 async function step(name, fn) {
   try {
-    await fn();
+    await bounded(fn(), 90000, "step");
     console.log(`ok   ${name}`);
   } catch (e) {
     // WebKitWebDriver often sends an empty message, so the error name and page state are the clue.
@@ -69,9 +78,17 @@ const nav = (label) => driver.findElement(By.xpath(`//nav//button[contains(., "$
 const columnOf = (name) => By.xpath(`//section[contains(@class,"column")][.//h3[normalize-space()="${name}"]]`);
 
 try {
-  await step("starts on Today with the sample data", async () => {
+  await step("starts on Início with the sample data", async () => {
     await $("nav");
-    await driver.wait(until.elementLocated(By.xpath('//h1[normalize-space()="Hoje"]')), 10000);
+    // 08:00:30 on the simulated clock, so the greeting is the morning one.
+    await driver.wait(until.elementLocated(By.xpath('//h1[normalize-space()="Bom dia."]')), 10000);
+    // Under the real CSP, which the browser checks do not have.
+    const fonts = await driver.executeAsyncScript((done) =>
+      document.fonts.ready.then(() => done([...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family))),
+    );
+    for (const f of ["Fraunces Variable", "Source Sans 3 Variable"]) {
+      if (!fonts.some((l) => l.includes(f))) throw new Error(`font not loaded: ${f}`);
+    }
   });
 
   await step("creates a card from the quick-add box", async () => {
@@ -85,12 +102,17 @@ try {
 
   await step("moves it to the next column with Alt+Right", async () => {
     const tile = await driver.findElement(By.xpath('//*[@data-id][contains(., "Cartão do teste E2E")]'));
+    mark("opening the card");
     await tile.click(); // opens the editor; close it to return to the board
     await driver.wait(until.elementLocated(By.css("aside.editor")), 10000);
+    mark("closing the editor");
     await driver.actions().sendKeys(Key.ESCAPE).perform();
+    mark("focusing the card");
     const t = await driver.findElement(By.xpath('//*[@data-id][contains(., "Cartão do teste E2E")]'));
     await driver.executeScript("arguments[0].focus()", t);
+    mark("pressing Alt+Right");
     await driver.actions().keyDown(Key.ALT).sendKeys(Key.ARROW_RIGHT).keyUp(Key.ALT).perform();
+    mark("waiting for the card in Rascunho");
     await driver.wait(until.elementLocated(By.xpath(`${columnOf("Rascunho").value}//*[@data-id][contains(., "Cartão do teste E2E")]`)), 10000);
   });
 
@@ -124,13 +146,15 @@ try {
     if (!found) throw new Error("no delivery recorded in .pauta/reminders.json");
   });
 } finally {
-  await driver.quit().catch(() => {});
+  await bounded(driver.quit(), 15000, "quit").catch(() => {});
   driverProc.kill();
   fs.rmSync(tmp, { recursive: true, force: true });
 }
 
 if (failures.length) {
   console.error(`\n${failures.length} failure(s)`);
+  for (const f of failures) console.error(`  ${f}`);
   process.exit(1);
 }
 console.log("e2e ok");
+process.exit(0);

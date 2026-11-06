@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
   import { t } from "../lib/i18n";
+  import Icon from "./Icon.svelte";
 
   let {
     title,
@@ -34,7 +35,7 @@
   <div class="body">
     <header>
       <h2>{title}</h2>
-      <button class="ghost" aria-label={t("common.close")} onclick={onclose}>✕</button>
+      <button class="ghost" aria-label={t("common.close")} onclick={onclose}><Icon name="x" /></button>
     </header>
     {@render children()}
   </div>
@@ -53,7 +54,8 @@
   }
 
   dialog::backdrop {
-    background: rgb(0 0 0 / 0.35);
+    /* ::backdrop only inherits custom properties in recent engines. */
+    background: var(--scrim, rgb(0 0 0 / 0.35));
   }
 
   .body {
@@ -67,5 +69,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  header button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 </style>

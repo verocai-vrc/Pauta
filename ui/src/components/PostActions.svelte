@@ -4,6 +4,7 @@
   import { api } from "../lib/api";
   import { t } from "../lib/i18n";
   import { app, card, fail, networkLabel, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
   let { id, compact = false }: { id: string; compact?: boolean } = $props();
@@ -27,6 +28,7 @@
     try {
       const updated = await api.markPublished(id, url.trim() || undefined);
       publishing = false;
+      url = "";
       toast(t("post.marked"));
       if (updated.kind === "article") offerPromo(updated.id, updated.title);
     } catch (err) {
@@ -52,13 +54,13 @@
 
 {#if c?.network}
   <div class="row" class:compact>
-    <button onclick={copy} title={t("post.copy_hint")}>⧉ {t("post.copy")}</button>
+    <button class="with-icon" onclick={copy} title={t("post.copy_hint")}><Icon name="copy" />{t("post.copy")}</button>
     {#if net?.url}
-      <button onclick={() => api.openUrl(net.url!).catch(fail)}>↗ {t("post.open_network", { net: networkLabel(c.network) })}</button>
+      <button class="with-icon" onclick={() => api.openUrl(net.url!).catch(fail)}><Icon name="external-link" />{t("post.open_network", { net: networkLabel(c.network) })}</button>
     {/if}
-    <button onclick={() => api.openAssets(id).catch(fail)}>🗀 {t("post.assets")}</button>
+    <button class="with-icon" onclick={() => api.openAssets(id).catch(fail)}><Icon name="folder" />{t("post.assets")}</button>
     {#if c.publication?.status !== "published"}
-      <button class="primary" onclick={() => (publishing = true)}>✓ {t("post.mark_published")}</button>
+      <button class="primary with-icon" onclick={() => (publishing = true)}><Icon name="check" />{t("post.mark_published")}</button>
     {/if}
   </div>
 {/if}
@@ -85,6 +87,11 @@
     font-size: var(--fs-sm);
     min-height: 26px;
     padding: 0 var(--sp-2);
+  }
+
+  /* The one primary action sits at the end of the row, as in the mockup. */
+  .compact .primary {
+    margin-left: auto;
   }
 
   .publish {

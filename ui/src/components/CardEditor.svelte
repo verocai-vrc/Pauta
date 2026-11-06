@@ -6,6 +6,7 @@
   import { t } from "../lib/i18n";
   import { charCount, postText, renderMarkdown, toggleTask } from "../lib/markdown";
   import { app, board as boardById, card as cardById, fail, networkLabel, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
   import ArtPanel from "./ArtPanel.svelte";
   import PostActions from "./PostActions.svelte";
@@ -267,7 +268,7 @@
       <span class="small muted status" aria-live="polite">
         {saving ? t("card.saving") : dirty.size ? t("card.pending") : t("card.saved")}
       </span>
-      <button class="ghost" aria-label={t("common.close")} onclick={close}>✕</button>
+      <button class="ghost" aria-label={t("common.close")} onclick={close}><Icon name="x" /></button>
     </header>
 
     <div class="grid">
@@ -321,7 +322,7 @@
 
     {#if network}
       <section class="publication" aria-label={t("card.publication")}>
-        <h3>{t("card.publication_on", { net: networkLabel(network) })}</h3>
+        <h3 class="rule-heading">{t("card.publication_on", { net: networkLabel(network) })}</h3>
         <div class="row">
           <label class="field">
             {t("card.pub_at")}
@@ -339,12 +340,12 @@
           </label>
         </div>
         <div class="row">
-          <button onclick={suggest}>⌚ {t("card.suggest_slot")}</button>
+          <button class="with-icon" onclick={suggest}><Icon name="clock" />{t("card.suggest_slot")}</button>
           {#each slots as s (s.local)}
             <button class="chip-btn" onclick={() => schedule(s.local)}>{s.date} {s.time}</button>
           {/each}
           {#if pubAt && pubStatus !== "published"}
-            <button class="primary" onclick={() => schedule(pubAt)}>{t("card.schedule")}</button>
+            <button onclick={() => schedule(pubAt)}>{t("card.schedule")}</button>
           {/if}
         </div>
         <Problems problems={app.index?.readiness[id] ?? []} />
@@ -362,26 +363,26 @@
     {/if}
 
     {#if stored.board && brd?.kind === "content"}
-      <div class="row small">
+      <div class="row small links">
         {#each otherNetworks as n (n.id)}
           {#if !siblings.some((s) => s.network === n.id)}
-            <button class="ghost" onclick={() => duplicate(n.id)}>⇄ {t("card.duplicate_for", { net: n.label })}</button>
+            <button class="ghost with-icon" onclick={() => duplicate(n.id)}><Icon name="arrow-left-right" />{t("card.duplicate_for", { net: n.label })}</button>
           {/if}
         {/each}
         {#each siblings as s (s.id)}
           <button class="ghost" onclick={() => (app.openCard = s.id)}>
-            ⇄ {t("card.sibling", { net: networkLabel(s.network) })}
+            <Icon name="arrow-left-right" /> {t("card.sibling", { net: networkLabel(s.network) })}
           </button>
         {/each}
         {#if article}
-          <button class="ghost" onclick={() => (app.openCard = article.id)}>↩ {t("card.promotes", { title: article.title })}</button>
+          <button class="ghost with-icon" onclick={() => (app.openCard = article.id)}><Icon name="undo-2" />{t("card.promotes", { title: article.title })}</button>
         {/if}
       </div>
     {/if}
 
     {#if network && pubStatus === "published"}
       <section class="results" aria-labelledby="results-h">
-        <div class="row between">
+        <div class="row between rule-heading">
           <h3 id="results-h">{t("metrics.title")}</h3>
           {#if metricsRecorded}<span class="small muted">{t("metrics.recorded", { date: metricsRecorded })}</span>{/if}
         </div>
@@ -408,7 +409,7 @@
             {t("card.chars", { n: count })}{#if netCfg?.char_limit != null}&nbsp;/ {netCfg.char_limit}{/if}
           </span>
         {:else if stored.checklist.total}
-          <span class="chip">☑ {stored.checklist.done}/{stored.checklist.total}</span>
+          <span class="chip"><Icon name="square-check" size={13} /> {stored.checklist.done}/{stored.checklist.total}</span>
         {/if}
       </div>
       {#if preview}
@@ -426,9 +427,9 @@
     </section>
 
     <section class="assets">
-      <div class="row between">
+      <div class="row between rule-heading">
         <h3>{t("card.assets")}</h3>
-        <button class="ghost" onclick={() => api.openAssets(id).catch(fail)}>🗀 {t("card.open_assets")}</button>
+        <button class="ghost with-icon" onclick={() => api.openAssets(id).catch(fail)}><Icon name="folder" />{t("card.open_assets")}</button>
       </div>
       {#if assets.length}
         <ul>
@@ -479,7 +480,7 @@
   .backdrop {
     position: fixed;
     inset: 0;
-    background: rgb(0 0 0 / 0.2);
+    background: var(--scrim);
     z-index: 40;
   }
 
@@ -512,10 +513,13 @@
 
   .title {
     flex: 1;
+    font-family: var(--font-serif);
     font-size: var(--fs-xl);
     font-weight: 600;
     border-color: transparent;
     background: transparent;
+    /* The title text lines up with the fields; the box of a hovered title reaches past it. */
+    margin-left: calc(-1 * (var(--sp-2) + 1px));
   }
 
   .title:hover,
@@ -548,10 +552,6 @@
   }
 
   .publication {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -563,13 +563,13 @@
   }
 
   .results {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: var(--sp-3);
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
+  }
+
+  .rule-heading h3 {
+    font-size: inherit;
   }
 
   .results p {
@@ -580,6 +580,11 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--sp-3);
+  }
+
+  /* The invisible padding of the first ghost button would push its text off the edge of the fields. */
+  .links > .ghost:first-child {
+    margin-left: calc(-1 * (var(--sp-3) + 1px));
   }
 
   .chip-btn {

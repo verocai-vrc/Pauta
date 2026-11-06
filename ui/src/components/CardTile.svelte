@@ -3,6 +3,7 @@
   import { addDays, whenLabel } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { app, networkLabel } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
 
   let {
     card,
@@ -51,23 +52,23 @@
       <span class="chip" class:ok={pub.status === "published"}>{t(`status.${pub.status}`)}</span>
     {/if}
     {#if card.due}
-      <span class="chip {dueState}" title={t("card.due")}>⚑ {whenLabel(card.due, today)}</span>
+      <span class="chip {dueState}" title={t("card.due")}><Icon name="flag" size={12} /> {whenLabel(card.due, today)}</span>
     {/if}
     {#if card.checklist.total}
       <span class="chip" class:ok={card.checklist.done === card.checklist.total} title={t("card.checklist")}>
-        ☑ {card.checklist.done}/{card.checklist.total}
+        <Icon name="square-check" size={12} /> {card.checklist.done}/{card.checklist.total}
       </span>
     {/if}
     {#if card.art}
       <span class="chip" class:ok={card.art.status === "ready"} class:warn={card.art.status === "requested"} title={t("art.title")}>
-        🎨 {card.art.status === "ready" ? t("art.badge_ready") : t("art.badge_requested")}
+        <Icon name="palette" size={12} /> {card.art.status === "ready" ? t("art.badge_ready") : t("art.badge_requested")}
       </span>
     {/if}
     {#if app.index?.readiness[card.id]?.length}
-      <span class="chip warn" title={t("ready.title")}><span aria-hidden="true">⚠</span> {t("ready.badge", { n: app.index.readiness[card.id].length })}</span>
+      <span class="chip warn" title={t("ready.title")}><Icon name="triangle-alert" size={12} /> {t("ready.badge", { n: app.index.readiness[card.id].length })}</span>
     {/if}
     {#if card.links.siblings.length}
-      <span class="chip" title={t("card.siblings")}>⇄ {card.links.siblings.length}</span>
+      <span class="chip" title={t("card.siblings")}><Icon name="arrow-left-right" size={12} /> {card.links.siblings.length}</span>
     {/if}
     {#if card.kind === "article"}<span class="chip">{t("kind.article")}</span>{/if}
     {#each card.tags as tag (tag)}
@@ -81,7 +82,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
     box-shadow: var(--shadow-1);
     cursor: grab;
     display: flex;
@@ -94,19 +95,21 @@
     border-color: var(--text-muted);
   }
 
+  /* The column list scrolls and clips, so the focus ring stays inside the card. */
+  .tile:focus-visible {
+    outline-offset: -2px;
+  }
+
   .title {
+    font-family: var(--font-serif);
     font-weight: 500;
+    line-height: 1.3;
     overflow-wrap: anywhere;
   }
 
   .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .tag {
-    background: transparent;
-    padding: 0 2px;
+    gap: var(--sp-1) var(--sp-2);
   }
 </style>

@@ -54,6 +54,8 @@ export interface Card {
   metrics: Metrics | null;
   art: Art | null;
   assets: string[];
+  /** When the card entered its current column; null if unknown (see `Card` in pauta-core). */
+  column_since: string | null;
   body: string;
   checklist: { done: number; total: number };
   path: string;

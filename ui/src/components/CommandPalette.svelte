@@ -1,7 +1,7 @@
 <script lang="ts">
   import { api } from "../lib/api";
   import { t } from "../lib/i18n";
-  import { app, board } from "../lib/store.svelte";
+  import { app, board, openToday } from "../lib/store.svelte";
   import Modal from "./Modal.svelte";
 
   interface Cmd {
@@ -19,7 +19,8 @@
 
   const commands = $derived.by<Cmd[]>(() => {
     const base: Cmd[] = [
-      { label: t("nav.today"), hint: t("palette.view"), run: () => (app.view = "today") },
+      { label: t("nav.home"), hint: t("palette.view"), run: () => (app.view = "home") },
+      { label: t("nav.today"), hint: t("palette.view"), run: openToday },
       { label: t("nav.boards"), hint: t("palette.view"), run: () => (app.view = "boards") },
       { label: t("nav.calendar"), hint: t("palette.view"), run: () => (app.view = "calendar") },
       { label: t("nav.rhythm"), hint: t("palette.view"), run: () => (app.view = "rhythm") },
@@ -57,7 +58,7 @@
   const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   const results = $derived.by(() => {
     const q = fold(query.trim());
-    const list = q ? commands.filter((c) => fold(c.label).includes(q)) : commands.slice(0, 8);
+    const list = q ? commands.filter((c) => fold(c.label).includes(q)) : commands.slice(0, 9);
     return list.slice(0, 30);
   });
 

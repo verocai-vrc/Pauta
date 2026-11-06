@@ -1,9 +1,10 @@
 <script lang="ts">
   import { api, type Rhythm } from "../lib/api";
   import { shortDate, WEEKDAYS_SHORT } from "../lib/dates";
-  import { t } from "../lib/i18n";
+  import { t, tn } from "../lib/i18n";
   import { app, fail, networkLabel, openItem } from "../lib/store.svelte";
   import CadenceMeter from "./CadenceMeter.svelte";
+  import Icon from "./Icon.svelte";
   import MetricsImport from "./MetricsImport.svelte";
   import StackedBars from "./StackedBars.svelte";
 
@@ -21,13 +22,13 @@
 
 <div class="rhythm">
   <header>
-    <h1>{t("rhythm.title")}</h1>
+    <h1 class="display">{t("rhythm.title")}</h1>
     <p class="muted">{t("rhythm.intro")}</p>
   </header>
 
   {#if data}
-    <section class="panel" aria-labelledby="goals">
-      <h2 id="goals">{t("rhythm.goals")}</h2>
+    <section aria-labelledby="goals">
+      <h2 id="goals" class="rule-heading">{t("rhythm.goals")}</h2>
       {#if data.cadence.length === 0}
         <p class="muted">{t("rhythm.no_goals")}</p>
       {:else}
@@ -37,8 +38,8 @@
       {/if}
     </section>
 
-    <section class="panel" aria-labelledby="weekly">
-      <h2 id="weekly">{t("rhythm.weekly")}</h2>
+    <section aria-labelledby="weekly">
+      <h2 id="weekly" class="rule-heading">{t("rhythm.weekly")}</h2>
       <StackedBars
         buckets={data.history.weeks}
         {networks}
@@ -47,8 +48,8 @@
       />
     </section>
 
-    <section class="panel" aria-labelledby="monthly">
-      <h2 id="monthly">{t("rhythm.monthly")}</h2>
+    <section aria-labelledby="monthly">
+      <h2 id="monthly" class="rule-heading">{t("rhythm.monthly")}</h2>
       <StackedBars
         buckets={data.history.months}
         {networks}
@@ -57,21 +58,21 @@
       />
     </section>
 
-    <section class="panel" aria-labelledby="results">
-      <div class="head">
+    <section aria-labelledby="results">
+      <div class="head rule-heading">
         <h2 id="results">{t("insights.title")}</h2>
         <button onclick={() => (importing = true)}>{t("import.open")}</button>
       </div>
       {#if data.insights.posts_with_metrics === 0}
         <p class="muted">{t("insights.none")}</p>
       {:else}
-        <p class="small muted">{t("insights.intro", { n: data.insights.posts_with_metrics })}</p>
+        <p class="small muted">{tn("insights.intro", data.insights.posts_with_metrics)}</p>
         {#each data.insights.networks as n (n.network)}
           {@const max = Math.max(1, ...n.by_weekday.map((d) => d.avg_engagement))}
           <div class="insight">
             <div class="row">
               <strong class="chip {n.network}">{n.label}</strong>
-              <span>{t("insights.summary", { posts: n.posts, avg: n.avg_engagement.toFixed(1) })}</span>
+              <span>{tn("insights.summary", n.posts, { avg: n.avg_engagement.toFixed(1) })}</span>
               {#if n.engagement_rate != null}<span class="muted">· {t("insights.rate", { pct: (n.engagement_rate * 100).toFixed(1) })}</span>{/if}
             </div>
             <table>
@@ -109,22 +110,24 @@
       {/if}
     </section>
 
-    <section class="panel" aria-labelledby="recent">
-      <h2 id="recent">{t("rhythm.recent")} <span class="muted small">· {t("rhythm.total_all", { n: data.history.total_posts })}</span></h2>
+    <section aria-labelledby="recent">
+      <h2 id="recent" class="rule-heading">{t("rhythm.recent")} <span class="muted small">· {t("rhythm.total_all", { n: data.history.total_posts })}</span></h2>
       {#if data.recent.length === 0}
         <p class="muted">{t("rhythm.none_yet")}</p>
       {:else}
         <ul>
           {#each data.recent as p (p.id)}
-            <li class="row">
-              <span class="small muted date">{shortDate(p.date)}</span>
+            <li class="entry">
+              <span class="small muted">{shortDate(p.date)}</span>
               <span class="chip {p.network}">{networkLabel(p.network)}</span>
-              {#if p.archived}
-                <span>{p.title}</span><span class="chip">{t("rhythm.archived")}</span>
-              {:else}
-                <button class="ghost" onclick={() => openItem("card", p.id)}>{p.title}</button>
-              {/if}
-              {#if p.url}<button class="ghost small" onclick={() => api.openUrl(p.url!).catch(fail)}>↗ {t("rhythm.open_post")}</button>{/if}
+              <span class="what">
+                {#if p.archived}
+                  <span>{p.title}</span><span class="chip">{t("rhythm.archived")}</span>
+                {:else}
+                  <button class="ghost" onclick={() => openItem("card", p.id)}>{p.title}</button>
+                {/if}
+              </span>
+              {#if p.url}<button class="ghost small with-icon" onclick={() => api.openUrl(p.url!).catch(fail)}><Icon name="external-link" size={14} />{t("rhythm.open_post")}</button>{/if}
             </li>
           {/each}
         </ul>
@@ -136,23 +139,32 @@
 {#if importing}<MetricsImport onclose={() => (importing = false)} />{/if}
 
 <style>
+  /* The text starts where Today's does, so the reading screens share one left edge. */
   .rhythm {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: var(--sp-5) var(--sp-4);
+    --indent: 148px;
+    max-width: calc(var(--indent) + 844px);
+    margin: 0;
+    padding: var(--sp-5) var(--sp-4) var(--sp-5) var(--indent);
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
   }
 
   header p {
-    margin: var(--sp-1) 0 0;
+    margin: var(--sp-2) 0 0;
   }
 
+  /* Sections on the ruled paper: a heading over a hairline, no boxes. */
   section {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+    margin-top: var(--sp-3);
+  }
+
+  .head button {
+    font-size: var(--fs-md);
+    min-height: 0;
   }
 
   .head {
@@ -178,8 +190,38 @@
     gap: var(--sp-1);
   }
 
-  .date {
-    width: 56px;
+  /* The lists are tabular: the date, the network, the title and the link have a column each. They
+     have plain paper, so the ruling does not run through the rows. */
+  ul,
+  ol,
+  .insight table {
+    background: var(--bg);
+  }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 4rem 5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .what {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .entry .ghost {
+    margin-inline: calc(-1 * (var(--sp-3) + 1px));
+  }
+
+  .entry .what .ghost {
+    text-align: left;
+  }
+
+  .entry > .ghost {
+    margin-left: 0;
   }
 
   .insight {
@@ -223,5 +265,11 @@
   ol {
     margin: 0;
     padding-left: var(--sp-5);
+  }
+
+  @media (max-width: 860px) {
+    .rhythm {
+      --indent: 108px;
+    }
   }
 </style>

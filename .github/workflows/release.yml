@@ -1,0 +1,82 @@
+name: Release
+
+# Pushing a tag like v0.2.0 runs the full CI, builds the .deb from that commit and
+# publishes it as a pre-release. Promoting it to stable is a separate, manual step.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      TAURI_LIBS: libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag must match the version in the code
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cargo_version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          node_version=$(node -p "require('./package.json').version")
+          if [ "$cargo_version" != "$version" ] || [ "$node_version" != "$version" ]; then
+            echo "tag $GITHUB_REF_NAME, Cargo.toml $cargo_version, package.json $node_version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Release notes from the changelog
+        run: |
+          awk -v v="$VERSION" '
+            index($0, "## [" v "]") == 1 { on = 1; next }
+            /^## \[/ { on = 0 }
+            on
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "CHANGELOG.md has no section for $VERSION"
+            exit 1
+          fi
+
+      - name: System libraries for Tauri
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $TAURI_LIBS
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:build
+
+      - name: The package must hold the app and the MCP server
+        run: |
+          deb="target/release/bundle/deb/Pauta_${VERSION}_amd64.deb"
+          dpkg-deb -c "$deb" | grep -q '/usr/bin/pauta$'
+          dpkg-deb -c "$deb" | grep -q '/usr/bin/pauta-mcp$'
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "target/release/bundle/deb/Pauta_${VERSION}_amd64.deb" \
+            --verify-tag --prerelease \
+            --title "Pauta $VERSION" --notes-file notes.md

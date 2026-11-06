@@ -6,6 +6,7 @@
   import { hm, relativeDay, WEEKDAYS_SHORT, shortDate, weekday } from "../lib/dates";
   import { t } from "../lib/i18n";
   import { HOUR_PX, layoutDay, minutesOf, timeAtOffset } from "../lib/weekgrid";
+  import Icon, { type IconName } from "./Icon.svelte";
 
   let {
     days,
@@ -28,7 +29,7 @@
     /** Local `HH:MM[:SS]` right now, in the configured zone. */
     now: string;
     kindLabel: (i: AgendaItem) => string;
-    icon: (i: AgendaItem) => string;
+    icon: (i: AgendaItem) => IconName;
     label: (i: AgendaItem) => string;
     ondragstart: (i: AgendaItem, e: DragEvent) => void;
     ondragend: () => void;
@@ -80,7 +81,8 @@
     {ondragend}
     onclick={() => onopen(i)}
   >
-    <span aria-hidden="true">{icon(i)}</span>
+    <!-- Done is a check in place of the kind icon, where narrow overlapping blocks cannot cut it off. -->
+    <Icon name={i.done ? "check" : icon(i)} size={12} />
     <span class="sr-only">{kindLabel(i)}:</span>
     {#if hm(i.when)}<span class="t">{hm(i.when)}</span>{/if}
     <span class="txt">{i.title}</span>
@@ -161,9 +163,8 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    background: var(--surface);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
+    border-top: 1px solid var(--head-rule);
+    border-bottom: 1px solid var(--border);
     overflow: hidden;
   }
 
@@ -312,6 +313,11 @@
     align-items: center;
   }
 
+  /* The icon sits on the first line of text, which is 17px high. */
+  .col .item > :global(.icon) {
+    margin-top: 2px;
+  }
+
   .item.due {
     border-left-color: var(--c-due);
   }
@@ -326,7 +332,6 @@
 
   .item.done {
     color: var(--text-muted);
-    text-decoration: line-through;
   }
 
   .t {
@@ -334,8 +339,11 @@
     font-weight: 600;
   }
 
+  /* One line: a short block would otherwise cut a second line in half. The full title is in the tooltip. */
   .txt {
+    min-width: 0;
     overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
   }
 </style>

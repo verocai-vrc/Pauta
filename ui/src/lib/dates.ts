@@ -62,6 +62,9 @@ const MONTHS_LONG = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ];
+const WEEKDAYS_LONG = [
+  "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo",
+];
 export const WEEKDAYS_SHORT = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"];
 
 export function shortDate(d: string): string {
@@ -73,6 +76,15 @@ export function monthTitle(d: string): string {
   const [y, m] = d.split("-");
   const name = MONTHS_LONG[Number(m) - 1];
   return `${name[0].toUpperCase()}${name.slice(1)} de ${y}`;
+}
+
+/** "Quarta-feira, 28 de outubro". */
+export function longDate(d: string): string {
+  const name = WEEKDAYS_LONG[weekday(d)];
+  const [, m, day] = d.split("-");
+  // The first of the month is an ordinal in Brazilian Portuguese: "1º de novembro".
+  const n = Number(day) === 1 ? "1º" : String(Number(day));
+  return `${name[0].toUpperCase()}${name.slice(1)}, ${n} de ${MONTHS_LONG[Number(m) - 1]}`;
 }
 
 /** "hoje", "amanhã", "ontem" or "qua, 4 nov". */

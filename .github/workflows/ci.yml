@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 env:
   TAURI_LIBS: libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
@@ -11,6 +12,7 @@ env:
 jobs:
   check:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -55,6 +57,7 @@ jobs:
     # The real app driven through tauri-driver. WebKitWebDriver is not installable on the
     # development box, so this job is the only place the suite runs.
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 

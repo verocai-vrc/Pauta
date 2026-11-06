@@ -1,17 +1,18 @@
 <script lang="ts">
   import { api, type AgendaItem, type AgendaKind } from "../lib/api";
   import {
-    addDays, addMonths, hm, monthGrid, monthTitle, moveToDay, relativeDay, shortDate, weekDays, WEEKDAYS_SHORT,
+    addDays, addMonths, hm, longDate, monthGrid, monthTitle, moveToDay, relativeDay, shortDate, weekDays, WEEKDAYS_SHORT,
   } from "../lib/dates";
   import { t } from "../lib/i18n";
-  import { app, board, fail, networkLabel, openItem } from "../lib/store.svelte";
+  import { app, board, fail, networkLabel, openItem, type CalendarMode } from "../lib/store.svelte";
+  import Icon, { type IconName } from "./Icon.svelte";
   import Modal from "./Modal.svelte";
+  import TodayView from "./Today.svelte";
   import WeekGrid from "./WeekGrid.svelte";
 
-  type Mode = "month" | "week" | "agenda";
   const today = $derived(app.today?.date ?? new Date().toISOString().slice(0, 10));
 
-  let mode = $state<Mode>("month");
+  const mode = $derived(app.calendarMode);
   let cursor = $state("");
   let items = $state<AgendaItem[]>([]);
   let fBoard = $state("");
@@ -30,7 +31,7 @@
     !cursor ? [] : mode === "month" ? monthGrid(cursor) : mode === "week" ? weekDays(cursor) : [],
   );
   const range = $derived.by(() => {
-    if (!cursor) return null;
+    if (!cursor || mode === "today") return null;
     if (mode === "agenda") return { from: cursor, to: addDays(cursor, 60) };
     return { from: days[0], to: days[days.length - 1] };
   });
@@ -73,10 +74,10 @@
           : t("cal.from", { date: shortDate(cursor) }),
   );
 
-  function icon(i: AgendaItem) {
-    if (i.kind === "publication") return "↗";
-    if (i.kind === "due") return "⚑";
-    return ({ deadline: "⚑", milestone: "★", launch: "▲" } as Record<string, string>)[i.status ?? ""] ?? "◆";
+  function icon(i: AgendaItem): IconName {
+    if (i.kind === "publication") return "external-link";
+    if (i.kind === "due") return "flag";
+    return ({ deadline: "flag", milestone: "star", launch: "rocket" } as Record<string, IconName>)[i.status ?? ""] ?? "diamond";
   }
 
   function label(i: AgendaItem) {
@@ -127,6 +128,9 @@
     return i.kind === "publication" ? networkLabel(i.network) : i.kind === "due" ? t("kind.due") : t(`event.${i.status ?? "event"}`);
   }
 
+  /** The days that relativeDay names with a word; the others are spelled out in the heading already. */
+  const NEAR = ["hoje", "amanhã", "ontem"];
+
   const agendaDays = $derived.by(() => {
     if (mode !== "agenda") return [];
     const byDay: Record<string, AgendaItem[]> = {};
@@ -135,7 +139,7 @@
   });
 </script>
 
-{#snippet chip(i: AgendaItem)}
+{#snippet chip(i: AgendaItem, bare = false)}
   <button
     class="item {i.kind} {i.network ?? ''}"
     class:done={i.done}
@@ -151,7 +155,10 @@
       openItem(i.kind === "event" ? "event" : "card", i.id);
     }}
   >
-    <span aria-hidden="true">{icon(i)}</span>
+    <!-- Done is a check in place of the kind icon, as in the week grid, so it can never be cut off.
+         `bare` leaves out the icon of a post in the month: the coloured bar already says what it is. -->
+    {#if i.done}<Icon name="check" size={12} />
+    {:else if !(bare && i.kind === "publication")}<Icon name={icon(i)} size={12} />{/if}
     <span class="sr-only">{kindLabel(i)}:</span>
     {#if hm(i.when)}<span class="t">{hm(i.when)}</span>{/if}
     <span class="txt">{i.title}</span>
@@ -159,49 +166,59 @@
   </button>
 {/snippet}
 
-<div class="calendar">
+<div class="calendar" class:day={mode === "today"}>
   <header class="row">
     <h1>{t("cal.title")}</h1>
     <div class="row" role="group" aria-label={t("cal.view")}>
-      {#each ["month", "week", "agenda"] as m (m)}
-        <button class:active={mode === m} aria-pressed={mode === m} onclick={() => (mode = m as Mode)}>{t(`cal.${m}`)}</button>
+      {#each ["today", "month", "week", "agenda"] as m (m)}
+        <button class:active={mode === m} aria-pressed={mode === m} onclick={() => (app.calendarMode = m as CalendarMode)}>{t(`cal.${m}`)}</button>
       {/each}
     </div>
-    <div class="row">
-      <button aria-label={t("cal.prev")} onclick={() => go(-1)}>‹</button>
-      <button onclick={() => (cursor = today)}>{t("cal.today")}</button>
-      <button aria-label={t("cal.next")} onclick={() => go(1)}>›</button>
-      <strong class="period" aria-live="polite">{title}</strong>
-    </div>
+    {#if mode !== "today"}
+      <div class="row">
+        <button class="with-icon" aria-label={t("cal.prev")} onclick={() => go(-1)}><Icon name="chevron-left" /></button>
+        <button onclick={() => (cursor = today)}>{t("cal.go_today")}</button>
+        <button class="with-icon" aria-label={t("cal.next")} onclick={() => go(1)}><Icon name="chevron-right" /></button>
+        <strong class="period" aria-live="polite">{title}</strong>
+      </div>
+    {/if}
     <span class="spacer"></span>
     <button
+      class="with-icon"
       onclick={() => {
         app.newEventDate = today;
         app.openEvent = "new";
-      }}>＋ {t("cal.new_event")}</button
+      }}><Icon name="plus" /> {t("cal.new_event")}</button
     >
   </header>
 
-  <div class="filters row" role="group" aria-label={t("cal.filters")}>
-    {#each ["publication", "due", "event"] as k (k)}
-      <label class="row small"><input type="checkbox" bind:checked={fKinds[k as AgendaKind]} /> {t(`cal.kind_${k}`)}</label>
-    {/each}
-    <select bind:value={fBoard} aria-label={t("cal.filter_board")}>
-      <option value="">{t("cal.all_boards")}</option>
-      {#each app.index?.boards ?? [] as b (b.id)}<option value={b.id}>{b.name}</option>{/each}
-    </select>
-    <select bind:value={fNetwork} aria-label={t("cal.filter_network")}>
-      <option value="">{t("cal.all_networks")}</option>
-      {#each app.index?.config.networks ?? [] as n (n.id)}<option value={n.id}>{n.label}</option>{/each}
-    </select>
-  </div>
+  {#if mode !== "today"}
+    <div class="filters row" role="group" aria-label={t("cal.filters")}>
+      {#each ["publication", "due", "event"] as k (k)}
+        <label class="row small"><input type="checkbox" bind:checked={fKinds[k as AgendaKind]} /> {t(`cal.kind_${k}`)}</label>
+      {/each}
+      <select bind:value={fBoard} aria-label={t("cal.filter_board")}>
+        <option value="">{t("cal.all_boards")}</option>
+        {#each app.index?.boards ?? [] as b (b.id)}<option value={b.id}>{b.name}</option>{/each}
+      </select>
+      <select bind:value={fNetwork} aria-label={t("cal.filter_network")}>
+        <option value="">{t("cal.all_networks")}</option>
+        {#each app.index?.config.networks ?? [] as n (n.id)}<option value={n.id}>{n.label}</option>{/each}
+      </select>
+    </div>
+  {/if}
 
-  {#if mode === "agenda"}
+  {#if mode === "today"}
+    <TodayView />
+  {:else if mode === "agenda"}
     <div class="agenda">
       {#if agendaDays.length === 0}<p class="muted">{t("cal.nothing")}</p>{/if}
       {#each agendaDays as [day, list] (day)}
         <section>
-          <h2 class:today={day === today}>{relativeDay(day, today)} <span class="muted small">{day}</span></h2>
+          <h2 class="rule-heading" class:today={day === today}>
+            {longDate(day)}
+            {#if NEAR.includes(relativeDay(day, today))}<span class="muted small">· {relativeDay(day, today)}</span>{/if}
+          </h2>
           <ul>
             {#each list as i (i.kind + i.id)}
               <li>
@@ -263,14 +280,14 @@
               {Number(day.slice(8))}
             </button>
             {#each list.slice(0, 4) as i (i.kind + i.id)}
-              {@render chip(i)}
+              {@render chip(i, true)}
             {/each}
             {#if list.length > 4}
               <button
                 class="more ghost small"
                 onclick={() => {
                   cursor = day;
-                  mode = "week";
+                  app.calendarMode = "week";
                 }}>+{list.length - 4}</button
               >
             {/if}
@@ -285,7 +302,7 @@
 
 {#if creatingOn}
   <Modal title={t("cal.create_on", { date: shortDate(creatingOn) })} onclose={() => (creatingOn = null)}>
-    <button class="primary" onclick={createEvent}>◆ {t("cal.new_event")}</button>
+    <button class="primary with-icon" onclick={createEvent}><Icon name="diamond" /> {t("cal.new_event")}</button>
     <form class="form" onsubmit={createCard}>
       <p class="small muted">{t("cal.or_card")}</p>
       <label class="field">
@@ -312,12 +329,32 @@
     height: 100%;
   }
 
+  /* Hoje keeps its own margins and scrolls with the page. Its ruled paper starts below the toolbar. */
+  .calendar.day {
+    height: auto;
+    min-height: 100%;
+    padding: 0;
+    gap: 0;
+  }
+
+  .calendar.day > header {
+    padding: var(--sp-4);
+    background: var(--bg);
+  }
+
+  .calendar.day > :global(.today) {
+    flex: 1;
+  }
+
   .spacer {
     flex: 1;
   }
 
   .period {
     margin-left: var(--sp-2);
+    font-family: var(--font-serif);
+    font-size: var(--fs-lg);
+    font-weight: 500;
   }
 
   .active {
@@ -337,14 +374,17 @@
   .weekrow {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 2px;
   }
 
+  .weekdays {
+    border-bottom: 1px solid var(--head-rule);
+  }
+
+  /* Hairlines between the cells, in place of separate boxes. */
   .cells {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
   }
 
   .weekrow {
@@ -352,16 +392,21 @@
     min-height: 96px;
   }
 
+  /* The label starts where the date under it does: the cell padding, the padding of the date and the cell border. */
   .wd {
     font-size: var(--fs-xs);
     color: var(--text-muted);
     text-transform: uppercase;
-    padding: var(--sp-1);
+    padding: var(--sp-1) var(--sp-1) var(--sp-1) calc(2 * var(--sp-1) + 1px);
+  }
+
+  .wd:first-child {
+    padding-left: calc(2 * var(--sp-1));
   }
 
   .cell {
-    background: var(--surface);
-    border-radius: var(--radius-sm);
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
     padding: 2px 4px 4px;
     display: flex;
     flex-direction: column;
@@ -370,8 +415,13 @@
     overflow: hidden;
   }
 
+  .cell:first-child {
+    border-left: none;
+  }
+
+  /* Days of the neighbouring months recede: on --sidebar they stay as light in light and are darker than the paper in Grafite. */
   .cell.other {
-    background: var(--surface-2);
+    background: var(--sidebar);
   }
 
   .cell.other .daynum {
@@ -422,10 +472,9 @@
     border-left-color: var(--c-instagram);
   }
 
-  /* Done items: struck through and muted by color, never by opacity (contrast). */
+  /* Done items: muted by color, never by opacity (contrast), and marked with a check. */
   .item.done {
     color: var(--text-muted);
-    text-decoration: line-through;
   }
 
   .t {
@@ -460,25 +509,34 @@
     color: var(--accent);
   }
 
+  /* Hairline rows, as in Today's ledger: no filled boxes. */
   .agenda ul {
     list-style: none;
     padding: 0;
-    margin: var(--sp-2) 0 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
   }
 
   .agenda li {
     display: flex;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     align-items: center;
+    border-bottom: 1px solid var(--border);
   }
 
   .agenda .item {
+    flex: 1;
+    min-width: 0;
     font-size: var(--fs-md);
-    min-height: 30px;
-    max-width: 560px;
+    min-height: 34px;
+    background: none;
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .agenda .item:hover {
+    background: var(--surface-2);
   }
 
   .form {

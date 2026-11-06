@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { addDays, addMonths, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
+import { addDays, addMonths, longDate, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
+import type { AgendaItem, Today } from "./api";
+import { todaySummary } from "./summary";
+import { t, tn } from "./i18n";
+import { ptBR } from "./locales/pt-BR";
 import { charCount, postText, toggleTask } from "./markdown";
 
 describe("dates", () => {
@@ -28,9 +32,101 @@ describe("dates", () => {
     expect(relativeDay("2026-11-04", "2026-10-28")).toBe("qua, 4 nov");
   });
 
+  it("long date spells out the weekday and the month", () => {
+    expect(longDate("2026-10-28")).toBe("Quarta-feira, 28 de outubro");
+    expect(longDate("2026-11-01")).toBe("Domingo, 1º de novembro");
+    expect(longDate("2026-11-11")).toBe("Quarta-feira, 11 de novembro");
+  });
+
   it("rescheduling keeps the time of day", () => {
     expect(moveToDay({ date: "2026-11-03", time: "09:00:00", at: "x" }, "2026-11-05")).toBe("2026-11-05T09:00");
     expect(moveToDay({ date: "2026-12-05", time: null, at: null }, "2026-12-06")).toBe("2026-12-06");
+  });
+});
+
+describe("today summary", () => {
+  const item = (id: string, done = false) => ({ id, done }) as unknown as AgendaItem;
+  const make = (posts: AgendaItem[], overdue: number, upcoming: number) =>
+    ({
+      posts,
+      overdue: Array.from({ length: overdue }, (_, i) => item(`o${i}`)),
+      upcoming: Array.from({ length: upcoming }, (_, i) => item(`u${i}`)),
+    }) as unknown as Today;
+
+  it("joins the three counts", () => {
+    expect(todaySummary(make([item("a")], 1, 3))).toBe(
+      "Um post para publicar, um item atrasado e três compromissos nos próximos 7 dias.",
+    );
+  });
+
+  it("uses plurals and digits past ten", () => {
+    expect(todaySummary(make([item("a"), item("b")], 2, 12))).toBe(
+      "Dois posts para publicar, dois itens atrasados e 12 compromissos nos próximos 7 dias.",
+    );
+  });
+
+  it("leaves out zero counts and posts already done", () => {
+    expect(todaySummary(make([item("a", true), item("b")], 0, 2))).toBe(
+      "Um post para publicar e dois compromissos nos próximos 7 dias.",
+    );
+    expect(todaySummary(make([], 3, 0))).toBe("Três itens atrasados.");
+  });
+
+  it("counts a late post of today once, not as a post and as overdue", () => {
+    const today = {
+      posts: [item("a"), item("b")],
+      overdue: [{ id: "a", kind: "publication" }, item("z")],
+      upcoming: [],
+    } as unknown as Today;
+    expect(todaySummary(today)).toBe("Dois posts para publicar e um item atrasado.");
+  });
+
+  it("keeps an overdue deadline on a card that also has a post today", () => {
+    // A card's publication and its deadline are two agenda items with the same card id.
+    const today = {
+      posts: [{ id: "a", kind: "publication", done: false }],
+      overdue: [{ id: "a", kind: "due" }],
+      upcoming: [],
+    } as unknown as Today;
+    expect(todaySummary(today)).toBe("Um post para publicar e um item atrasado.");
+  });
+
+  it("uses the singular for exactly one upcoming item", () => {
+    expect(todaySummary(make([], 0, 1))).toBe("Um compromisso nos próximos 7 dias.");
+  });
+
+  it("says so when nothing is pending", () => {
+    expect(todaySummary(make([item("a", true)], 0, 0))).toBe("Nada pendente por aqui.");
+  });
+});
+
+describe("plurals", () => {
+  it("picks the singular for exactly one", () => {
+    expect(tn("cadence.missing", 1)).toBe("Falta 1 para a meta.");
+    expect(tn("cadence.missing", 2)).toBe("Faltam 2 para a meta.");
+    expect(tn("import.apply", 1)).toBe("Importar 1 post");
+    expect(tn("import.apply", 3)).toBe("Importar 3 posts");
+    expect(tn("insights.summary", 1, { avg: "2.0" })).toBe("1 post, média de 2.0 de engajamento");
+  });
+
+  it("leaves no optional plural left in a message", () => {
+    expect(Object.entries(ptBR).filter(([, v]) => /\(s\)|\(es\)/.test(v))).toEqual([]);
+  });
+});
+
+describe("message placeholders", () => {
+  it("keeps $ patterns in a value as typed", () => {
+    expect(t("home.proj_created", { title: "Ganhe $$$ hoje" })).toBe("Criado: Ganhe $$$ hoje");
+    expect(t("home.proj_created", { title: "Orçamento R$& cia" })).toBe("Criado: Orçamento R$& cia");
+    expect(t("home.proj_created", { title: "Custa $' e $`" })).toBe("Criado: Custa $' e $`");
+  });
+
+  it("does not fill a placeholder that comes from a value", () => {
+    expect(t("home.proj_moved", { column: "{title}", title: "Revisar" })).toBe("Movido para {title}: Revisar");
+  });
+
+  it("leaves an unknown placeholder alone", () => {
+    expect(t("home.proj_created", {})).toBe("Criado: {title}");
   });
 });
 

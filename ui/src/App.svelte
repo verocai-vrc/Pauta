@@ -3,8 +3,9 @@
   import { api } from "./lib/api";
   import { t } from "./lib/i18n";
   import { app, start, type View } from "./lib/store.svelte";
+  import Icon, { type IconName } from "./components/Icon.svelte";
   import Setup from "./components/Setup.svelte";
-  import TodayView from "./components/Today.svelte";
+  import Home from "./components/Home.svelte";
   import Boards from "./components/Boards.svelte";
   import Calendar from "./components/Calendar.svelte";
   import Rhythm from "./components/Rhythm.svelte";
@@ -15,13 +16,23 @@
   import TrashArchive from "./components/TrashArchive.svelte";
   import Toasts from "./components/Toasts.svelte";
 
-  const views: { id: View; key: string; icon: string; shortcut: string }[] = [
-    { id: "today", key: "nav.today", icon: "☀", shortcut: "Alt+1" },
-    { id: "boards", key: "nav.boards", icon: "▦", shortcut: "Alt+2" },
-    { id: "calendar", key: "nav.calendar", icon: "▤", shortcut: "Alt+3" },
-    { id: "rhythm", key: "nav.rhythm", icon: "▥", shortcut: "Alt+4" },
-    { id: "settings", key: "nav.settings", icon: "⚙", shortcut: "Alt+5" },
+  const views: { id: View; key: string; icon: IconName; shortcut: string }[] = [
+    { id: "home", key: "nav.home", icon: "house", shortcut: "Alt+1" },
+    { id: "boards", key: "nav.boards", icon: "columns-3", shortcut: "Alt+2" },
+    { id: "calendar", key: "nav.calendar", icon: "calendar", shortcut: "Alt+3" },
+    { id: "rhythm", key: "nav.rhythm", icon: "chart-column", shortcut: "Alt+4" },
+    { id: "settings", key: "nav.settings", icon: "settings", shortcut: "Alt+5" },
   ];
+  const SEARCH_SHORTCUT = "Ctrl+K";
+  const CAPTURE_SHORTCUT = "Ctrl+Shift+I";
+
+  /** The reading screens sit on ruled paper; Início, the boards, the calendar grids and the editor do not. */
+  const paper = $derived(
+    app.view === "rhythm" || app.view === "settings" || (app.view === "calendar" && app.calendarMode === "today"),
+  );
+
+  /** `aria-keyshortcuts` spells the modifier "Control". */
+  const aria = (shortcut: string) => shortcut.replace("Ctrl", "Control");
 
   async function applyTheme() {
     try {
@@ -59,7 +70,10 @@
 {:else}
   <div class="shell">
     <nav class="sidebar" aria-label={t("nav.label")}>
-      <div class="brand" aria-hidden="true">Pauta</div>
+      <div class="brand" aria-hidden="true">
+        Pauta
+        <small>{t("nav.tagline")}</small>
+      </div>
       <ul>
         {#each views as v (v.id)}
           <li>
@@ -67,25 +81,41 @@
               class="nav-item"
               class:active={app.view === v.id}
               aria-current={app.view === v.id ? "page" : undefined}
+              aria-keyshortcuts={aria(v.shortcut)}
               title={`${t(v.key)} (${v.shortcut})`}
               onclick={() => (app.view = v.id)}
             >
-              <span class="icon" aria-hidden="true">{v.icon}</span>
-              <span>{t(v.key)}</span>
+              <Icon name={v.icon} />
+              <span class="label">{t(v.key)}</span>
+              <kbd aria-hidden="true">{v.shortcut}</kbd>
             </button>
           </li>
         {/each}
       </ul>
       <div class="spacer"></div>
-      <button class="nav-item" onclick={() => api.openCapture()} title={t("nav.capture_hint")}>
-        <span class="icon" aria-hidden="true">＋</span><span>{t("nav.capture")}</span>
+      <button
+        class="nav-item"
+        aria-keyshortcuts={aria(SEARCH_SHORTCUT)}
+        onclick={() => (app.paletteOpen = true)}
+        title={`${t("nav.search")} (${SEARCH_SHORTCUT})`}
+      >
+        <Icon name="search" />
+        <span class="label">{t("nav.search")}</span>
+        <kbd aria-hidden="true">{SEARCH_SHORTCUT}</kbd>
       </button>
-      <button class="nav-item" onclick={() => (app.paletteOpen = true)} title="Ctrl+K">
-        <span class="icon" aria-hidden="true">⌕</span><span>{t("nav.search")}</span>
+      <button
+        class="nav-item primary capture"
+        aria-keyshortcuts={aria(CAPTURE_SHORTCUT)}
+        onclick={() => api.openCapture()}
+        title={t("nav.capture_hint")}
+      >
+        <Icon name="plus" />
+        <span class="label">{t("nav.capture")}</span>
+        <kbd aria-hidden="true">{CAPTURE_SHORTCUT}</kbd>
       </button>
     </nav>
 
-    <main class="content">
+    <main class="content" class:paper>
       {#if app.loadError}
         <div class="load-error" role="alert">
           <strong>{t("app.load_error")}</strong>
@@ -93,8 +123,8 @@
         </div>
       {/if}
       {#if app.index}
-        {#if app.view === "today"}
-          <TodayView />
+        {#if app.view === "home"}
+          <Home />
         {:else if app.view === "boards"}
           <Boards />
         {:else if app.view === "calendar"}
@@ -132,7 +162,7 @@
 <style>
   .shell {
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 216px 1fr;
     height: 100%;
   }
 
@@ -140,17 +170,30 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-1);
-    padding: var(--sp-3) var(--sp-2);
-    background: var(--surface);
+    padding: var(--sp-4) var(--sp-2) var(--sp-3);
+    background: var(--sidebar);
     border-right: 1px solid var(--border);
   }
 
   .brand {
-    font-weight: 700;
-    font-size: var(--fs-lg);
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: var(--fs-xl);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: var(--accent);
-    padding: var(--sp-1) var(--sp-2) var(--sp-3);
-    letter-spacing: 0.02em;
+    padding: 0 var(--sp-3) var(--sp-4);
+  }
+
+  .brand small {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--font-ui);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   ul {
@@ -172,20 +215,63 @@
     align-items: center;
     width: 100%;
     border: none;
+    border-radius: var(--radius-md);
     background: transparent;
+    color: var(--text-muted);
     text-align: left;
-    padding: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+  }
+
+  .nav-item:hover {
+    background: var(--surface-3);
+    color: var(--text);
   }
 
   .nav-item.active {
-    background: var(--accent-soft);
+    background: var(--surface);
     color: var(--accent);
+    font-weight: 600;
+    box-shadow:
+      var(--shadow-1),
+      inset 3px 0 0 var(--accent);
+  }
+
+  /* Capture is the one primary action of the shell. */
+  .nav-item.capture {
+    flex-wrap: wrap;
+    margin-top: var(--sp-1);
+    background: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 
-  .icon {
-    width: 1.2em;
-    text-align: center;
+  /* If both do not fit, the shortcut moves to a second line and the label stays whole. */
+  .capture .label {
+    white-space: nowrap;
+  }
+
+  .nav-item.capture:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+    filter: brightness(1.08);
+  }
+
+  .label {
+    min-width: 0;
+  }
+
+  kbd {
+    margin-left: auto;
+    font-family: var(--font-ui);
+    font-size: var(--fs-xs);
+    font-weight: 400;
+    white-space: nowrap;
+    color: var(--text-muted);
+  }
+
+  .capture kbd {
+    color: inherit;
+    opacity: 0.85;
   }
 
   .content {
@@ -216,9 +302,15 @@
       grid-template-columns: 56px 1fr;
     }
 
-    .nav-item span:not(.icon),
+    .label,
+    kbd,
     .brand {
       display: none;
+    }
+
+    .nav-item {
+      justify-content: center;
+      padding-inline: var(--sp-2);
     }
   }
 </style>

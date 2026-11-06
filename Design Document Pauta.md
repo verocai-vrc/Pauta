@@ -423,7 +423,7 @@ Uma tela de calendário mostra, num só lugar, todos os itens com data:
 
 ### 8.2 Tela "Hoje" [RECOMENDAÇÃO]
 
-A tela que o app abre por padrão, pensada para o uso diário:
+A tela de detalhe do dia, na aba Hoje do Calendário (o app abre no Início, seção 8.4):
 
 - o que postar hoje, com acesso direto às ações da seção 7.3;
 - prazos de hoje e dos próximos dias;
@@ -432,9 +432,13 @@ A tela que o app abre por padrão, pensada para o uso diário:
 
 ### 8.3 Bandeja e widget
 
-**[RECOMENDAÇÃO]** Um ícone na bandeja do sistema mostra os próximos itens (próxima publicação, próximo prazo) e dá acesso rápido para abrir o app, abrir a tela "Hoje" e capturar uma ideia. No Ubuntu, isso usa o suporte a indicadores de aplicativo, que vem ativo por padrão; conferir em outras distribuições.
+**[RECOMENDAÇÃO]** Um ícone na bandeja do sistema mostra os próximos itens (próxima publicação, próximo prazo) e dá acesso rápido para abrir o app, abrir a tela "Hoje" (a aba do Calendário) e capturar uma ideia. No Ubuntu, isso usa o suporte a indicadores de aplicativo, que vem ativo por padrão; conferir em outras distribuições.
 
 **[ABERTO]** Widget na área de trabalho. O ambiente GNOME do Ubuntu não tem widgets nativos; seria preciso uma extensão própria. Fica como possibilidade futura.
+
+### 8.4 Tela Início [DECIDIDO]
+
+A tela que o app abre ao iniciar e na primeira abertura da janela em cada novo dia. Mostra de relance o que precisa do autor hoje, sem rolar, em sete widgets fixos: **Brief** (saudação, resumo e próximo compromisso), **Postar hoje**, **Avisos**, **Agenda** (7 dias), **Ritmo**, **Ideias** (com campo para guardar uma nova) e **Projetos** (último e próximo passo de cada quadro). Cada lista tem limite e um "Ver mais" que leva à tela de detalhe. A disposição, os limites e as regras estão em `docs/superpowers/specs/2026-11-05-inicio-design.md`; a decisão de compô-la na interface, em `docs/adr/0009-inicio-na-interface.md`.
 
 ---
 
@@ -550,16 +554,17 @@ Além de ferramentas, o MCP permite expor recursos (por exemplo, o resumo do dia
 
 ### 12.1 Telas [RECOMENDAÇÃO]
 
-1. **Hoje** (tela inicial): seção 8.2.
+1. **Início** (tela inicial): seção 8.4.
 2. **Quadros:** abas, um quadro por aba, com o painel de edição do cartão.
-3. **Calendário:** seção 8.1.
-4. **Configurações:** pasta de dados, fuso, idioma, redes e faixas de postagem, lembretes padrão, horário de silêncio, inicialização automática, tema, atalhos e o trecho de configuração do MCP.
+3. **Calendário:** seção 8.1, com a aba **Hoje** (seção 8.2).
+4. **Ritmo:** metas de cadência e histórico (seção 10).
+5. **Configurações:** pasta de dados, fuso, idioma, redes e faixas de postagem, lembretes padrão, horário de silêncio, inicialização automática, tema, atalhos e o trecho de configuração do MCP.
 
 Mais a bandeja (seção 8.3) e uma janela pequena de **captura rápida de ideia**, acionável por atalho global e pela bandeja.
 
 ### 12.2 Navegação e atalhos
 
-Barra lateral com Hoje, Quadros, Calendário e Configurações. Paleta de comandos (por exemplo, Ctrl K) para buscar cartões, trocar de quadro e executar ações. Atalhos para criar cartão, mover cartão, abrir o calendário e capturar ideia.
+Barra lateral com Início (`Alt+1`), Quadros, Calendário, Ritmo e Configurações. Paleta de comandos (por exemplo, Ctrl K) para buscar cartões, trocar de quadro e executar ações. Atalhos para criar cartão, mover cartão, abrir o calendário e capturar ideia.
 
 ### 12.3 Idioma
 
@@ -693,6 +698,12 @@ Binário `pauta-mcp` com as ferramentas da seção 11.3, log de escrita, testes 
 
 Metas de cadência, histórico de publicações e os itens da seção 17, na ordem que o autor decidir.
 
+### Marco 7: Tela Início
+
+Tela Início como primeira tela, com os sete widgets da seção 8.4. O Hoje passa a aba do Calendário, e o app volta ao Início na primeira abertura de cada novo dia. Só interface: nenhum comando novo (ADR 0009).
+
+**Aceite:** o app abre no Início; na janela padrão os sete widgets cabem sem rolagem; cada "Ver mais" leva ao detalhe certo; marcar como publicado, copiar o texto e guardar uma ideia funcionam a partir do Início; em um novo dia, a primeira abertura da janela leva a ele.
+
 ---
 
 ## 17. Evolução futura
@@ -795,6 +806,7 @@ Em ordem aproximada de urgência:
 | prazo | deadline |
 | marco | milestone |
 | lançamento | launch |
+| tela "Início" | home screen |
 | tela "Hoje" | today view |
 | captura rápida | quick capture |
 | bandeja | system tray |

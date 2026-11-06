@@ -30,6 +30,6 @@
 
   .toast.error {
     background: var(--danger);
-    color: #fff;
+    color: var(--danger-text);
   }
 </style>

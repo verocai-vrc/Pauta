@@ -3,6 +3,7 @@
   import { t } from "../lib/i18n";
   import { app, board as boardById, fail, toast } from "../lib/store.svelte";
   import BoardView from "./BoardView.svelte";
+  import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
 
   const boards = $derived(app.index?.boards ?? []);
@@ -140,9 +141,9 @@
       {/each}
     </div>
     <div class="row actions">
-      <button class="ghost" onclick={() => (creating = true)}>＋ {t("board.new")}</button>
-      {#if current}<button class="ghost" onclick={openSettings}>⚙ {t("board.settings")}</button>{/if}
-      <button class="ghost" onclick={() => (app.trashOpen = true)}>🗑 {t("trash.title")}</button>
+      <button class="ghost with-icon" onclick={() => (creating = true)}><Icon name="plus" />{t("board.new")}</button>
+      {#if current}<button class="ghost with-icon" onclick={openSettings}><Icon name="settings" />{t("board.settings")}</button>{/if}
+      <button class="ghost with-icon" onclick={() => (app.trashOpen = true)}><Icon name="trash-2" />{t("trash.title")}</button>
     </div>
   </div>
 
@@ -226,26 +227,26 @@
                   <input type="number" min="1" style="width: 64px" bind:value={col.limit} aria-label={t("board.col_limit")} />
                 </td>
                 <td class="row">
-                  <button type="button" class="ghost" aria-label={t("common.up")} onclick={() => moveColumn(i, -1)}>↑</button>
-                  <button type="button" class="ghost" aria-label={t("common.down")} onclick={() => moveColumn(i, 1)}>↓</button>
+                  <button type="button" class="ghost" aria-label={t("common.up")} onclick={() => moveColumn(i, -1)}><Icon name="arrow-up" /></button>
+                  <button type="button" class="ghost" aria-label={t("common.down")} onclick={() => moveColumn(i, 1)}><Icon name="arrow-down" /></button>
                   <button
                     type="button"
                     class="ghost danger"
                     aria-label={t("board.col_remove")}
                     title={originalIds.includes(col.id) ? t("board.col_remove_hint") : ""}
-                    onclick={() => columns.splice(i, 1)}>✕</button
+                    onclick={() => columns.splice(i, 1)}><Icon name="x" /></button
                   >
                 </td>
               </tr>
             {/each}
           </tbody>
         </table>
-        <button type="button" onclick={addColumn}>＋ {t("board.col_add")}</button>
+        <button type="button" class="with-icon" onclick={addColumn}><Icon name="plus" />{t("board.col_add")}</button>
       </fieldset>
       <div class="row">
-        <button type="button" onclick={() => shiftBoard(-1)}>◀ {t("board.move_left")}</button>
-        <button type="button" onclick={() => shiftBoard(1)}>{t("board.move_right")} ▶</button>
-        <button type="button" onclick={() => api.openPath(current.dir).catch(fail)}>🗀 {t("board.open_folder")}</button>
+        <button type="button" class="with-icon" onclick={() => shiftBoard(-1)}><Icon name="chevron-left" /> {t("board.move_left")}</button>
+        <button type="button" class="with-icon" onclick={() => shiftBoard(1)}>{t("board.move_right")} <Icon name="chevron-right" /></button>
+        <button type="button" class="with-icon" onclick={() => api.openPath(current.dir).catch(fail)}><Icon name="folder" /> {t("board.open_folder")}</button>
       </div>
       <div class="row">
         <button class="primary" type="submit">{t("common.save")}</button>
@@ -279,20 +280,28 @@
     flex: 1;
   }
 
+  /* Direction A of the approved mockup: a plain tab, and the current one is ink on paper reversed. */
   .tab {
     border: none;
     background: transparent;
-    border-bottom: 3px solid transparent;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    border-radius: 999px;
+    padding: var(--sp-1) var(--sp-3);
+    color: var(--text-muted);
     display: flex;
     gap: var(--sp-2);
     align-items: center;
   }
 
-  .tab[aria-selected="true"] {
-    border-bottom-color: var(--board-color);
+  .tab[aria-selected="true"],
+  .tab[aria-selected="true"]:hover {
+    background: var(--text);
+    color: var(--bg);
     font-weight: 600;
-    background: var(--surface);
+  }
+
+  /* The dot keeps the colour of the board as data; the ring keeps it visible on the current tab. */
+  .tab[aria-selected="true"] .dot {
+    box-shadow: 0 0 0 1.5px var(--bg);
   }
 
   .dot {

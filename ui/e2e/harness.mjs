@@ -12,7 +12,7 @@ import { chromium } from "playwright-core";
 
 const require = createRequire(import.meta.url);
 const root = path.resolve(import.meta.dirname, "../..");
-const dist = path.join(root, "ui/dist");
+const dist = process.env.PAUTA_DIST ?? path.join(root, "ui/dist");
 export const shots = process.env.SHOTS;
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
@@ -62,13 +62,24 @@ export async function newPage(scheme = "light", { init } = {}) {
   if (init) await page.addInitScript(init);
   await page.addInitScript((data) => {
     let cb = 0;
+    const callbacks = {};
+    const listeners = {};
+    window.__fixtures = data;
+    // Delivers a backend event to the app, as the tray and the notifications do.
+    window.__emit = (event, payload) => (listeners[event] ?? []).forEach((id) => callbacks[id]({ event, id, payload }));
     window.__TAURI_INTERNALS__ = {
-      transformCallback: () => ++cb,
+      transformCallback: (f) => {
+        callbacks[++cb] = f;
+        return cb;
+      },
       unregisterCallback: () => {},
       invoke: async (cmd, args) => {
         const over = window.__override?.(cmd, args);
         if (over !== undefined) return over;
         switch (cmd) {
+          case "plugin:event|listen":
+            (listeners[args.event] ??= []).push(args.handler);
+            return args.handler;
           case "app_status": return { root: "/home/arthur/Documentos/Pauta", suggested: "", error: null };
           case "get_index": return data.index;
           case "get_today": return data.today;
@@ -89,7 +100,24 @@ export async function newPage(scheme = "light", { init } = {}) {
   return page;
 }
 
+const fonts = ["Fraunces Variable", "Source Sans 3 Variable"];
+
 export async function audit(page, name, scheme) {
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family);
+  });
+  for (const f of fonts) {
+    if (!loaded.some((l) => l.includes(f))) problems.push(`[${scheme}] ${name}: font not loaded: ${f}`);
+  }
+
+  // axe cannot measure contrast over a background image or under a pseudo-element that has a
+  // background, and it would skip that text without saying so. The ruling is only hairlines, the
+  // select arrow is a small icon in the padding and the margin line is a thin stripe in a gap with
+  // no text, so the audit measures the text against the plain paper.
+  const noRuling = await page.addStyleTag({
+    content: ":root { --ruling: none !important; --chevron: none !important; } .today::before { display: none !important; }",
+  });
   await page.addScriptTag({ content: axeSource });
   const result = await page.evaluate(() =>
     window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } }),
@@ -101,6 +129,16 @@ export async function audit(page, name, scheme) {
       problems.push(`[${scheme}] ${name}: ${v.id} (${v.impact}) ${node.target.join(" ")} :: ${v.help}${detail}`);
     }
   }
+  // A blind spot guard: contrast that axe could not measure for one of these reasons means some
+  // background (an image, a gradient or a pseudo-element) is still under the text.
+  const blind = new Set(["bgImage", "bgGradient", "pseudoContent"]);
+  for (const v of result.incomplete.filter((x) => x.id === "color-contrast")) {
+    for (const node of v.nodes) {
+      const key = node.any?.map((c) => c.data?.messageKey).find((k) => blind.has(k));
+      if (key) problems.push(`[${scheme}] ${name}: contrast not measured (${key}) ${node.target.join(" ")}`);
+    }
+  }
+  await noRuling.evaluate((el) => el.remove());
   if (shots) await page.screenshot({ path: path.join(shots, `${scheme}-${name}.png`) });
 }
 

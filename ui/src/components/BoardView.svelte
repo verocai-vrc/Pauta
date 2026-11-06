@@ -4,6 +4,7 @@
   import { t } from "../lib/i18n";
   import { app, fail } from "../lib/store.svelte";
   import CardTile from "./CardTile.svelte";
+  import Icon from "./Icon.svelte";
 
   let { board }: { board: Board } = $props();
 
@@ -136,11 +137,11 @@
     {@const shown = cards.filter(visible)}
     {@const over = col.limit != null && cards.length > col.limit}
     <section class="column" class:over aria-labelledby={`col-${col.id}`}>
-      <header>
+      <header class="section-label">
         <h3 id={`col-${col.id}`}>{col.name}</h3>
         <span class="count" class:warn={over} title={over ? t("board.over_limit") : ""}>
           {cards.length}{#if col.limit != null}/{col.limit}{/if}
-          {#if over}<span class="sr-only">{t("board.over_limit")}</span> ⚠{/if}
+          {#if over}<span class="sr-only">{t("board.over_limit")}</span> <Icon name="triangle-alert" size={12} />{/if}
         </span>
         <button
           class="ghost add"
@@ -148,7 +149,7 @@
           onclick={() => {
             adding = adding === col.id ? null : col.id;
             newTitle = "";
-          }}>＋</button
+          }}><Icon name="plus" /></button
         >
       </header>
       {#if adding === col.id}
@@ -209,7 +210,7 @@
 
   .columns {
     display: flex;
-    gap: var(--sp-3);
+    gap: var(--sp-4);
     padding: 0 var(--sp-4) var(--sp-4);
     align-items: flex-start;
     overflow-x: auto;
@@ -217,45 +218,51 @@
   }
 
   .column {
-    flex: 0 0 272px;
-    background: var(--surface-2);
-    border-radius: var(--radius-md);
-    padding: var(--sp-2);
+    flex: 0 0 240px;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     max-height: calc(100vh - 170px);
   }
 
-  .column.over {
-    box-shadow: inset 0 0 0 2px var(--warning);
-  }
-
+  /* Flat column: the heading is a .section-label over a rule, no box. */
   header {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    padding: 0 var(--sp-1);
+    padding-bottom: var(--sp-1);
   }
 
   header h3 {
     flex: 1;
+    min-width: 0;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    overflow-wrap: anywhere;
+  }
+
+  .column.over header {
+    border-bottom-color: var(--warning);
   }
 
   .count {
-    font-size: var(--fs-xs);
-    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
     font-variant-numeric: tabular-nums;
   }
 
   .count.warn {
     color: var(--warning);
-    font-weight: 700;
   }
 
   .add {
+    display: inline-flex;
+    align-items: center;
     min-height: 24px;
-    padding: 0 var(--sp-2);
+    padding: 0 var(--sp-1);
+    color: var(--text-muted);
   }
 
   form input {
@@ -268,7 +275,6 @@
     gap: var(--sp-2);
     overflow-y: auto;
     min-height: 48px;
-    padding: 2px;
   }
 
   .dragging {
@@ -281,8 +287,13 @@
     background: var(--focus);
   }
 
+  /* It reads at the top of the empty drop zone, which keeps its height as the drop target and
+     stays out of the way of drops. */
   .empty {
-    text-align: center;
-    margin: var(--sp-2) 0;
+    margin: calc(-1 * (48px + var(--sp-3))) 0 0;
+    padding-top: var(--sp-3);
+    pointer-events: none;
+    font-family: var(--font-serif);
+    font-style: italic;
   }
 </style>

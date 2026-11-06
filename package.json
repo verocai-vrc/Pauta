@@ -10,9 +10,10 @@
     "check": "svelte-check --tsconfig ui/tsconfig.json",
     "test": "vitest run --config ui/vite.config.ts",
     "tauri": "tauri",
+    "release:build": "cargo build --release -p pauta-mcp && tauri build",
     "test:a11y": "node ui/e2e/screens.mjs",
     "lint": "eslint ui eslint.config.js",
-    "test:browser": "node ui/e2e/autosave.mjs && node ui/e2e/screens.mjs",
+    "test:browser": "node ui/e2e/autosave.mjs && node ui/e2e/screens.mjs && node ui/e2e/home.mjs",
     "test:e2e": "node ui/e2e/tauri.mjs"
   },
   "devDependencies": {
@@ -35,6 +36,8 @@
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "5.3.0",
+    "@fontsource-variable/source-sans-3": "5.3.1",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-autostart": "^2",
     "@tauri-apps/plugin-clipboard-manager": "^2",

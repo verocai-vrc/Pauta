@@ -3,8 +3,9 @@
   import { open, save as saveDialog } from "@tauri-apps/plugin-dialog";
   import { api, type McpSnippet, type NetworkConfig, type Preferences } from "../lib/api";
   import { WEEKDAYS_SHORT } from "../lib/dates";
-  import { t } from "../lib/i18n";
+  import { t, tn } from "../lib/i18n";
   import { app, fail, reload, toast } from "../lib/store.svelte";
+  import Icon from "./Icon.svelte";
 
   const DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   const cfg = app.index!.config;
@@ -100,7 +101,7 @@
     if (!path) return;
     try {
       const n = await api.exportIcs(path, icsAll);
-      toast(t("settings.ics_done", { n }));
+      toast(tn("settings.ics_done", n));
     } catch (e) {
       fail(e);
     }
@@ -112,15 +113,15 @@
 </script>
 
 <div class="settings">
-  <h1>{t("settings.title")}</h1>
+  <h1 class="display">{t("settings.title")}</h1>
 
   <section class="panel">
     <h2>{t("settings.data")}</h2>
     <div class="row">
       <code>{app.status?.root}</code>
-      <button onclick={() => app.status?.root && api.openPath(app.status.root).catch(fail)}>🗀 {t("settings.open_folder")}</button>
+      <button class="with-icon" onclick={() => app.status?.root && api.openPath(app.status.root).catch(fail)}><Icon name="folder" />{t("settings.open_folder")}</button>
       <button onclick={changeFolder}>{t("settings.change_folder")}</button>
-      <button onclick={() => (app.trashOpen = true)}>🗑 {t("trash.title")}</button>
+      <button class="with-icon" onclick={() => (app.trashOpen = true)}><Icon name="trash-2" />{t("trash.title")}</button>
     </div>
     <p class="small muted">{t("settings.data_hint")}</p>
   </section>
@@ -152,7 +153,7 @@
               <option value="month">{t("settings.goal_month")}</option>
             </select>
           </label>
-          <span class="small muted">{t("settings.goal_hint")}</span>
+          <span class="small muted hint">{t("settings.goal_hint")}</span>
         </div>
         <label class="row small">
           <input type="checkbox" bind:checked={n.media.requires_media} /> {t("settings.requires_media")}
@@ -172,10 +173,10 @@
               {/each}
             </div>
             <input type="time" bind:value={slot.time} aria-label={t("settings.slot_time")} />
-            <button type="button" class="ghost danger" aria-label={t("settings.slot_remove")} onclick={() => n.slots.splice(si, 1)}>✕</button>
+            <button type="button" class="ghost danger" aria-label={t("settings.slot_remove")} onclick={() => n.slots.splice(si, 1)}><Icon name="x" /></button>
           </div>
         {/each}
-        <button type="button" onclick={() => n.slots.push({ days: ["tue"], time: "09:00" })}>＋ {t("settings.slot_add")}</button>
+        <button type="button" class="with-icon" onclick={() => n.slots.push({ days: ["tue"], time: "09:00" })}><Icon name="plus" />{t("settings.slot_add")}</button>
       </fieldset>
     {/each}
 
@@ -217,7 +218,7 @@
     <p class="small muted">{t("settings.ics_hint")}</p>
     <div class="row">
       <label class="row small"><input type="checkbox" bind:checked={icsAll} /> {t("settings.ics_all")}</label>
-      <button onclick={exportIcs}>⇩ {t("settings.ics_export")}</button>
+      <button class="with-icon" onclick={exportIcs}><Icon name="download" />{t("settings.ics_export")}</button>
     </div>
   </section>
 
@@ -262,19 +263,31 @@
 </div>
 
 <style>
+  /* The text starts where Today's does, so the reading screens share one left edge. */
   .settings {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: var(--sp-5) var(--sp-4);
+    --indent: 148px;
+    max-width: calc(var(--indent) + 844px);
+    margin: 0;
+    padding: var(--sp-5) var(--sp-4) var(--sp-5) var(--indent);
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
   }
 
-  .form {
+  .panel {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+  }
+
+  /* The gap does the spacing; a paragraph margin on top of it opened holes. */
+  p {
+    margin: 0;
+  }
+
+  /* A small heading belongs to the text under it, not to the block above. */
+  h3 {
+    margin: var(--sp-2) 0 calc(-1 * var(--sp-1));
   }
 
   fieldset {
@@ -286,7 +299,9 @@
   }
 
   legend {
-    font-weight: 600;
+    font-family: var(--font-serif);
+    font-size: var(--fs-md);
+    font-weight: 500;
   }
 
   fieldset > button {
@@ -295,6 +310,12 @@
 
   .narrow {
     max-width: 280px;
+  }
+
+  /* The hint reads on the line of the input, not in the middle of label and input. */
+  .hint {
+    align-self: flex-end;
+    line-height: 32px;
   }
 
   .grow {
@@ -353,5 +374,11 @@
 
   dd {
     margin: 0;
+  }
+
+  @media (max-width: 860px) {
+    .settings {
+      --indent: 108px;
+    }
   }
 </style>

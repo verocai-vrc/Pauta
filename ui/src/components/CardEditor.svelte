@@ -45,6 +45,9 @@
   // Bumped on every edit of a field. A save only clears the fields whose counter is
   // unchanged since it started, so text typed while a save is in flight stays dirty.
   const revision: Partial<Record<Field, number>> = {};
+  // Hashes this editor has moved past. The index lags behind a write until the watcher's reload
+  // arrives, and that old copy must not be mistaken for an outside change.
+  const superseded = new SvelteSet<string>();
   let preview = $state(false);
   let slots = $state<{ local: string; date: string; time: string }[]>([]);
   let assets = $state<{ name: string; path: string }[]>([]);
@@ -54,8 +57,13 @@
   let panel: HTMLElement;
   let previewEl = $state<HTMLElement>();
 
+  function advanceTo(hash: string) {
+    if (baseHash && baseHash !== hash) superseded.add(baseHash);
+    baseHash = hash;
+  }
+
   function load(c: Card) {
-    baseHash = c.hash;
+    advanceTo(c.hash);
     title = c.title;
     body = c.body.replace(/^\n/, "");
     tags = c.tags.join(", ");
@@ -77,7 +85,9 @@
   // Follow outside changes (MCP, editor, other window) while nothing is pending.
   $effect(() => {
     const c = stored;
-    if (c && c.hash !== baseHash && dirty.size === 0 && !saving) load(c);
+    if (!c) return;
+    if (c.hash === baseHash) superseded.clear();
+    else if (!superseded.has(c.hash) && dirty.size === 0 && !saving) load(c);
   });
 
   $effect(() => {
@@ -143,7 +153,7 @@
     let saved = false;
     try {
       const updated = await api.updateCard(id, buildPatch(fields), expected);
-      baseHash = updated.hash;
+      advanceTo(updated.hash);
       for (const f of fields) if ((revision[f] ?? 0) === sent[f]) dirty.delete(f);
       conflict = null;
       saved = true;

@@ -43,12 +43,9 @@ impl Drop for WaiterSlot {
 }
 
 fn reserve_waiter() -> Option<WaiterSlot> {
-    WAITERS
-        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| {
-            (n < MAX_WAITERS).then_some(n + 1)
-        })
-        .ok()
-        .map(|_| WaiterSlot)
+    let taken = WAITERS.fetch_add(1, Ordering::SeqCst);
+    // Over the limit, `then_some` drops the slot, which gives the count back.
+    (taken < MAX_WAITERS).then_some(WaiterSlot)
 }
 
 /// Shows `n` and runs `on_action` with the name of the clicked action.
@@ -229,4 +226,24 @@ fn snooze(app: &AppHandle, key: &str, minutes: i64) {
     let now = ws.now();
     rs.snooze(key, now + SignedDuration::from_mins(minutes));
     let _ = rs.save(ws.root(), now);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn waiter_slots_are_limited_and_given_back() {
+        let held: Vec<_> = (0..MAX_WAITERS).map(|_| reserve_waiter().expect("free slot")).collect();
+        assert!(reserve_waiter().is_none(), "no slot past the limit");
+        assert_eq!(
+            WAITERS.load(Ordering::SeqCst),
+            MAX_WAITERS,
+            "a refused slot is not counted"
+        );
+
+        drop(held);
+        assert_eq!(WAITERS.load(Ordering::SeqCst), 0);
+        assert!(reserve_waiter().is_some(), "released slots can be taken again");
+    }
 }

@@ -61,7 +61,7 @@ cargo test --workspace            # núcleo (unidade, integração e propriedade
 cargo clippy --workspace --all-targets -- -D warnings
 pnpm lint && pnpm check && pnpm test   # ESLint, tipos do Svelte e Vitest
 pnpm test:browser                 # cada tela em claro e escuro com axe (WCAG 2.2 AA) e a regressão do salvamento automático
-xvfb-run -a pnpm test:e2e         # app real via tauri-driver (precisa de webkit2gtk-driver; ver abaixo)
+pnpm tauri build --debug --no-bundle && xvfb-run -a pnpm test:e2e   # app real via tauri-driver (precisa de webkit2gtk-driver; ver abaixo)
 cargo run -p pauta-cli -- --root examples/sample-data boards
 ```
 
@@ -86,7 +86,7 @@ A versão 0 (marcos 0 a 5 do documento de design) está pronta e foi revisada pe
 
 Limites conhecidos:
 
-- **A suíte `tauri-driver` ainda não foi executada.** O `WebKitWebDriver` não está instalável na máquina de desenvolvimento; a primeira execução será no CI. Ela não cobre arrastar com o mouse (o WebKitWebDriver não gera eventos de arrastar do HTML5); o equivalente pelo teclado é coberto, e o arrastar é testado à mão.
+- **A suíte `tauri-driver` ainda não passou.** O `WebKitWebDriver` não está instalável na máquina de desenvolvimento, então ela só roda no CI. A primeira execução falhou porque testava um binário de desenvolvimento, que procura o servidor do Vite em vez da interface embutida; o CI agora compila com `pnpm tauri build --debug --no-bundle`, mas essa correção ainda não rodou lá. Ela não cobre arrastar com o mouse (o WebKitWebDriver não gera eventos de arrastar do HTML5); o equivalente pelo teclado é coberto, e o arrastar é testado à mão.
 - **Não há integração com o Claude Design.** Não existe API: o Pauta monta o pedido, guarda o estado e recebe os arquivos que você exportar. Os tamanhos de imagem por rede vêm de fontes que divergem entre si; confira-os na ajuda de cada plataforma e ajuste em `pauta.yaml` (ADR 0007).
 - **A importação de CSV foi testada com arquivos escritos por mim**, não com exportações reais do LinkedIn ou do Instagram, cujo formato não pude verificar. Ela reconhece as colunas por nome (português ou inglês) e mostra o que entendeu antes de gravar; se a sua exportação usar outros nomes, a mensagem diz o que faltou e dá para acrescentá-los em `crates/pauta-core/src/import.rs`.
 - O teste manual dos critérios de aceite que dependem do desktop real (notificação com a janela fechada em release, lembrete perdido após desligar, Claude Desktop no Linux) continua sendo seu.

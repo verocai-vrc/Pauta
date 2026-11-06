@@ -23,7 +23,7 @@ A composição fica na interface, em funções puras de `ui/src/lib/home/*.ts` c
 
 Até aqui a interface não fazia conta de fuso: o backend entrega `Today.date` e `Today.time` já no fuso de `pauta.yaml` (ADR 0008). O widget Projetos precisa do **dia** em que um cartão foi atualizado, e `updated`, `column_since` e `created` chegam como instantes em UTC (`2026-11-04T01:30:00Z` é 3 de novembro em Recife). Comparar o texto da data erraria o "atualizado hoje" perto da meia-noite.
 
-`localDay(timestamp, timezone)` converte com `Intl.DateTimeFormat("en-CA", { timeZone })`, usando `config.timezone`, e **só** o Projetos a usa. Ela é a única conta de fuso na interface. A alternativa, expor o dia local de cada cartão no backend, mudaria o formato dos dados por um detalhe de exibição. O risco é a base de fusos do WebKit divergir da do `chrono-tz` em zonas raras; para os fusos de uso real isso não aparece, e o teste de `localDay` cobre o caso de virada de dia.
+`localDay(timestamp, timezone)` converte com `Intl.DateTimeFormat("en-CA", { timeZone })`, usando `config.timezone`, e **só** o Projetos a usa. Ela é a única conta de fuso na interface. A alternativa, expor o dia local de cada cartão no backend, mudaria o formato dos dados por um detalhe de exibição. O risco é a base de fusos do WebKit divergir da do `jiff` em zonas raras; para os fusos de uso real isso não aparece, e o teste de `localDay` cobre o caso de virada de dia. Se o WebView rejeitar o nome do fuso (o backend aceita nomes como `localtime`), `localDay` cai para o dia em UTC: o "atualizado hoje" pode errar perto da meia-noite, mas a tela não fica em branco.
 
 ## Volta ao Início em um novo dia
 

@@ -26,11 +26,16 @@ export interface ProjectSummary {
  * the backend sends instants, and "which day was that for the user" needs `config.timezone`.
  */
 export function localDay(timestamp: string, timezone: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(
-    new Date(timestamp),
-  );
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  return `${get("year")}-${get("month")}-${get("day")}`;
+  const at = new Date(timestamp);
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(at);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    // The backend accepts zone names that the WebView's database rejects (ADR 0009). A day that is
+    // off by a few hours near midnight is better than a first screen with no widgets.
+    return at.toISOString().slice(0, 10);
+  }
 }
 
 export function updatedLabel(day: string, date: string): string {
@@ -104,7 +109,10 @@ function nextLine(board: Board, cards: Card[], index: Index, date: string): Proj
     if (c.due && !doneColumns.has(c.column)) dated.push({ date: c.due.date, time: c.due.time, rank: 0, title: c.title, line: { kind: "card", id: c.id } });
   }
   for (const e of index.events) {
-    if (e.links.board === board.id && e.when.date >= date) dated.push({ date: e.when.date, time: e.when.time, rank: 1, title: e.title, line: { kind: "event", id: e.id } });
+    // An event already going on counts as today, as in the agenda (section 5.4).
+    if (e.links.board !== board.id || (e.end?.date ?? e.when.date) < date) continue;
+    const began = e.when.date < date;
+    dated.push({ date: began ? date : e.when.date, time: began ? null : e.when.time, rank: 1, title: e.title, line: { kind: "event", id: e.id } });
   }
   let nearest: Dated | null = null;
   for (const d of dated) if (!nearest || earlier(d, nearest)) nearest = d;

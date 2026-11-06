@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { addDays, addMonths, longDate, monthGrid, moveToDay, relativeDay, startOfWeek, weekday } from "./dates";
 import type { AgendaItem, Today } from "./api";
 import { todaySummary } from "./summary";
-import { tn } from "./i18n";
+import { t, tn } from "./i18n";
 import { ptBR } from "./locales/pt-BR";
 import { charCount, postText, toggleTask } from "./markdown";
 
@@ -111,6 +111,22 @@ describe("plurals", () => {
 
   it("leaves no optional plural left in a message", () => {
     expect(Object.entries(ptBR).filter(([, v]) => /\(s\)|\(es\)/.test(v))).toEqual([]);
+  });
+});
+
+describe("message placeholders", () => {
+  it("keeps $ patterns in a value as typed", () => {
+    expect(t("home.proj_created", { title: "Ganhe $$$ hoje" })).toBe("Criado: Ganhe $$$ hoje");
+    expect(t("home.proj_created", { title: "Orçamento R$& cia" })).toBe("Criado: Orçamento R$& cia");
+    expect(t("home.proj_created", { title: "Custa $' e $`" })).toBe("Criado: Custa $' e $`");
+  });
+
+  it("does not fill a placeholder that comes from a value", () => {
+    expect(t("home.proj_moved", { column: "{title}", title: "Revisar" })).toBe("Movido para {title}: Revisar");
+  });
+
+  it("leaves an unknown placeholder alone", () => {
+    expect(t("home.proj_created", {})).toBe("Criado: {title}");
   });
 });
 

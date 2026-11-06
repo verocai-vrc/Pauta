@@ -51,6 +51,12 @@ describe("buildWarnings", () => {
     expect(out.map((w) => w.text)).toEqual(["1 arquivo com erro", "1 cartão parado"]);
   });
 
+  it("says 10 or more, because the backend sends at most 10 stale cards", () => {
+    const stale = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `s${i}`, board: "b", title: "x", column: "draft", network: null }));
+    expect(buildWarnings(today({ stale: stale(9) }), {}, [], null).map((w) => w.text)).toEqual(["9 cartões parados"]);
+    expect(buildWarnings(today({ stale: stale(10) }), {}, [], null).map((w) => w.text)).toEqual(["10 ou mais cartões parados"]);
+  });
+
   it("hides the late post of today that Postar hoje already shows, but not a deadline of the same card", () => {
     const post = item("publication", "p", "Post", DATE, { network: "linkedin" });
     const deadline = item("due", "p", "Prazo do mesmo cartão", "2026-11-03");
@@ -58,10 +64,10 @@ describe("buildWarnings", () => {
     expect(out.map((w) => w.text)).toEqual(["Prazo do mesmo cartão"]);
   });
 
-  it("shows a late post of today that is already done", () => {
-    const done = item("publication", "p", "Já publicado", DATE, { done: true });
-    const out = buildWarnings(today({ posts: [done], overdue: [done] }), {}, [], null);
-    expect(out).toHaveLength(1);
+  it("keeps a pending post from an earlier day, which Postar hoje does not show", () => {
+    const old = item("publication", "old", "Post de ontem", "2026-11-04", { network: "linkedin" });
+    const out = buildWarnings(today({ posts: [], overdue: [old] }), {}, [], null);
+    expect(out.map((w) => [w.tone, w.text, w.card])).toEqual([["danger", "Post de ontem", "old"]]);
   });
 
   it("includes problems of posts up to three days ahead, not four, and never the lead", () => {

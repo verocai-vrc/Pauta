@@ -105,7 +105,8 @@ async function onOpened() {
   await refreshToday();
   const date = app.today?.date;
   if (!date) return;
-  const busy = app.openCard !== null || app.openEvent !== null || app.paletteOpen || app.trashOpen;
+  // Any open dialog counts (new board, publish link, metrics): they keep their state locally, and text typed in them would be lost.
+  const busy = app.openCard !== null || app.openEvent !== null || app.paletteOpen || app.trashOpen || document.querySelector("dialog[open]") !== null;
   if (shouldReturnHome(seenDate, date, busy)) app.view = "home";
   // Also when busy: the day counts as seen, so closing the editor later does not trigger the return.
   seenDate = date;
@@ -117,14 +118,22 @@ export async function start() {
   setInterval(() => {
     if (document.visibilityState !== "visible") return;
     // Whoever crosses midnight while working must not be sent home when switching windows later.
+    // The focus is read before the call: if it arrives while the call is on its way, that is an opening.
+    const focused = document.hasFocus();
     refreshToday().then(() => {
-      if (document.hasFocus() && app.today) seenDate = app.today.date;
+      if (focused && app.today) seenDate = app.today.date;
     });
   }, 60_000);
   document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && onOpened());
   window.addEventListener("focus", onOpened);
   await listen("pauta://changed", () => reload());
   // The tray and the notifications still ask for "today", which is no longer a view.
-  await listen<string>("pauta://navigate", (e) => (e.payload === "today" ? openToday() : (app.view = e.payload as View)));
+  // An explicit request wins over the return to Início, whichever arrives first: the window is raised
+  // and then this event is emitted, so a pending `onOpened` must find no day to compare with.
+  await listen<string>("pauta://navigate", (e) => {
+    seenDate = null;
+    if (e.payload === "today") openToday();
+    else app.view = e.payload as View;
+  });
   await listen<{ kind: string; id: string }>("pauta://open", (e) => openItem(e.payload.kind, e.payload.id));
 }

@@ -56,6 +56,7 @@ export const ptBR: Record<string, string> = {
   "home.warn_queue": "{net}: nada agendado em {days} dias",
   "home.warn_stale_one": "{n} cartão parado",
   "home.warn_stale_other": "{n} cartões parados",
+  "home.warn_stale_many": "{n} ou mais cartões parados",
   "home.problem_no_text": "sem texto",
   "home.problem_over_limit": "texto acima do limite",
   "home.problem_media_missing": "falta imagem",

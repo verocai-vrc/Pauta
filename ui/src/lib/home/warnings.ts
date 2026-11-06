@@ -13,6 +13,9 @@ export interface Warning {
   card: string | null;
 }
 
+/** The backend sends at most this many stale cards, so a full list means "at least". */
+const STALE_CAP = 10;
+
 /** A post this close with something missing is worth a line; further out there is time. */
 const READY_WINDOW_DAYS = 3;
 
@@ -44,7 +47,9 @@ export function buildWarnings(today: Today, readiness: Index["readiness"], agend
   }
 
   if (today.stale.length > 0) {
-    out.push({ key: "stale", tone: "quiet", text: tn("home.warn_stale", today.stale.length), aux: null, card: null });
+    const n = today.stale.length;
+    const text = n >= STALE_CAP ? t("home.warn_stale_many", { n }) : tn("home.warn_stale", n);
+    out.push({ key: "stale", tone: "quiet", text, aux: null, card: null });
   }
 
   return out;

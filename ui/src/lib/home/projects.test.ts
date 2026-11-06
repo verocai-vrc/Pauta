@@ -30,6 +30,11 @@ describe("localDay", () => {
     expect(localDay("2026-11-04T01:30:00Z", "America/Recife")).toBe("2026-11-03");
     expect(localDay("2026-11-04T01:30:00Z", "UTC")).toBe("2026-11-04");
   });
+  it("falls back to the UTC day for a zone the WebView does not know", () => {
+    // The backend accepts names such as "localtime" that Intl rejects; Início must not go blank over it.
+    expect(localDay("2026-11-04T01:30:00Z", "posix/America/Recife")).toBe("2026-11-04");
+    expect(localDay("2026-11-04T01:30:00Z", "")).toBe("2026-11-04");
+  });
 });
 
 describe("updatedLabel", () => {
@@ -88,6 +93,14 @@ describe("next", () => {
   it("counts an event of the board from today on", () => {
     const s = one([card("far", { due: when("2026-11-20") })], [event("e", "2026-11-05")]);
     expect(s.next).toEqual({ text: "e · qui, 5 nov", kind: "event", id: "e" });
+  });
+  it("counts an event that began earlier and is still going on, as today", () => {
+    const s = one([card("far", { due: when("2026-11-20") })], [event("week", "2026-11-01", { end: when("2026-11-05") })]);
+    expect(s.next).toEqual({ text: "week · hoje", kind: "event", id: "week" });
+  });
+  it("ignores an event that ended before today", () => {
+    const s = one([card("a", { column: "doing" })], [event("over", "2026-11-01", { end: when("2026-11-02") })]);
+    expect(s.next?.id).toBe("a");
   });
   it("ignores past events and events of other boards", () => {
     const s = one([card("a", { column: "doing" })], [event("old", "2026-11-02"), event("other", "2026-11-04", { links: { board: "x", siblings: [], article: null } })]);

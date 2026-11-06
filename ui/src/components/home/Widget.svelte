@@ -67,6 +67,9 @@
     align-items: center;
     gap: 4px;
     margin-left: auto;
+    /* The target stays 24px tall, but the header does not grow with it, and the arrow ends on the rule. */
+    margin-block: -4px;
+    margin-right: calc(var(--sp-1) * -1 - 1px);
     min-height: 24px;
     padding: 0 var(--sp-1);
     font-size: var(--fs-xs);
@@ -83,5 +86,10 @@
     flex-direction: column;
     gap: var(--sp-2);
     min-width: 0;
+  }
+
+  /* Empty-state text would otherwise keep the browser's paragraph margins and float at an arbitrary height. */
+  .body :global(p) {
+    margin: 0;
   }
 </style>

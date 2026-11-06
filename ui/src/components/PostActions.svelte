@@ -28,6 +28,7 @@
     try {
       const updated = await api.markPublished(id, url.trim() || undefined);
       publishing = false;
+      url = "";
       toast(t("post.marked"));
       if (updated.kind === "article") offerPromo(updated.id, updated.title);
     } catch (err) {

@@ -142,7 +142,7 @@ A lista é montada nesta ordem:
 
 ### 5.5 Ritmo
 
-Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Nesse modo, são no máximo seis pontos, em uma linha só, seguidos de "…"; com meta acima de cinco, os pontos ficam menores. O número exato está no texto. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
+Cada rede de `today.cadence` em uma linha: rede, pontos e "1 de 2 nesta semana". Os pontos têm o mesmo significado do `CadenceMeter`, que ganha a propriedade `inline`. Nesse modo, são no máximo seis pontos, em uma linha só, seguidos de "…"; com meta acima de cinco, os pontos ficam menores. O número exato está no texto. Onde o texto não cabe ao lado dos pontos (colunas de 250px, em uma janela de 1100px), ele desce para uma linha própria; os pontos continuam em uma linha só. Sem metas: "Nenhuma meta definida." "Ver mais" abre o Ritmo.
 
 ### 5.6 Ideias
 

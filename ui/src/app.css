@@ -356,6 +356,12 @@ label.field > :is(input, select, textarea) {
   color: var(--ok);
 }
 
+/* Without a color of its own each engine picks one, and WebKit's grey fails AA on white. */
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -486,10 +492,12 @@ button.w-row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  width: 100%;
   min-width: 0;
   min-height: 24px;
   padding: var(--w-row-y) var(--sp-1);
+  /* The hover bleeds into the card's padding, so the text itself sits on the card's edges, as the header rule does. */
+  margin-inline: calc(var(--sp-1) * -1);
+  width: calc(100% + 2 * var(--sp-1));
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;

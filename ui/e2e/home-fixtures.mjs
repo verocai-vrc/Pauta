@@ -99,19 +99,22 @@ function build(name) {
       { network: "linkedin", label: "LinkedIn", days: 7, candidates: [] },
       { network: "instagram", label: "Instagram", days: 7, candidates: [] },
     ];
-    t.today.stale = Array.from({ length: 12 }, (_, i) => ({ id: `stale-${i}`, board: "conteudo", title: "Parado", column: "draft", network: null }));
+    t.today.stale = Array.from({ length: 10 }, (_, i) => ({ id: `stale-${i}`, board: "conteudo", title: "Parado", column: "draft", network: null }));
     t.today.invalid_files = 2;
     t.index.invalid = [
       { path: "/x/um.md", error: "cabeçalho quebrado" },
       { path: "/x/dois.md", error: "cabeçalho quebrado" },
     ];
-    t.today.cadence = [cadence("linkedin", "LinkedIn", 1, 1), cadence("instagram", "Instagram", 0, 0), { ...cadence("mastodon", "Mastodon", 0, 1), goal: 12 }];
+    // A goal of 12 on the first network, which every window shows, and the other two with a goal of 2 and of 6.
+    t.today.cadence = [{ ...cadence("linkedin", "LinkedIn", 1, 1), goal: 12 }, cadence("instagram", "Instagram", 0, 0), { ...cadence("mastodon", "Mastodon", 0, 1), goal: 6 }];
     t.agenda = [
       ...t.today.posts,
       post("soon-1", long, when("2026-11-04", "09:00"), "linkedin"),
       post("soon-2", long, when("2026-11-05", "09:00"), "instagram"),
       post("soon-3", long, when("2026-11-06", "09:00"), "linkedin"),
-      ...Array.from({ length: 27 }, (_, i) => due(`a-${i}`, pick(i), when(`2026-11-${String(4 + (i % 7)).padStart(2, "0")}`))),
+      // Deadlines over all eight days the window allows (today to today + 7): each day costs a header,
+      // and the Hoje group has one too, so this is the fullest the Agenda can be.
+      ...Array.from({ length: 27 }, (_, i) => due(`a-${i}`, pick(i), when(`2026-11-${String(3 + (i % 8)).padStart(2, "0")}`))),
     ];
     const proto = t.index.boards[1];
     t.index.boards = [...t.index.boards, { ...proto, id: "extra-1", name: "Projeto com um nome realmente muito longo que não cabe" }, { ...proto, id: "extra-2", name: solid }];
@@ -155,6 +158,13 @@ function build(name) {
       t.today.posts = t.today.posts.map((p) => ({ ...p, done: true, status: "published" }));
       return t;
     },
+    // The next commitment is a deadline whose title cannot break: it must stay inside the Brief.
+    longNext(fx) {
+      const t = typical(fx);
+      t.today.posts = [];
+      t.agenda = t.agenda.filter((i) => i.kind !== "publication" && i.id !== EVENT).map((i) => (i.id === "t0" ? { ...i, title: solid } : i));
+      return t;
+    },
     noContentBoard(fx) {
       const t = typical(fx);
       t.index = { ...t.index, boards: t.index.boards.filter((b) => b.kind !== "content"), cards: t.index.cards.filter((c) => c.board !== "conteudo") };
@@ -186,4 +196,5 @@ export const emptyHome = scenario("empty");
 export const lateHome = scenario("late");
 export const noPostsHome = scenario("noPosts");
 export const allPostedHome = scenario("allPosted");
+export const longNextHome = scenario("longNext");
 export const noContentBoardHome = scenario("noContentBoard");

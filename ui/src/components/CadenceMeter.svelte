@@ -8,8 +8,10 @@
   // `inline` is the Início row: network, dots and progress on one line. Without it nothing changes.
   let { progress, compact = false, inline = false }: { progress: CadenceProgress; compact?: boolean; inline?: boolean } = $props();
 
+  // The Início row has room for six; the text beside the dots says the exact numbers.
+  const cap = $derived(inline ? 6 : 12);
   const slots = $derived(
-    Array.from({ length: Math.min(progress.goal, 12) }, (_, i) =>
+    Array.from({ length: Math.min(progress.goal, cap) }, (_, i) =>
       i < progress.done ? "done" : i < progress.done + progress.scheduled ? "scheduled" : "open",
     ),
   );
@@ -20,12 +22,12 @@
 {#snippet dots()}
   <div class="dots" role="img" aria-label={t("cadence.aria", { done: progress.done, scheduled: progress.scheduled, goal: progress.goal })}>
     {#each slots as s, i (i)}<span class="dot {s}"></span>{/each}
-    {#if progress.goal > 12}<span class="small muted">…</span>{/if}
+    {#if progress.goal > cap}<span class="small muted">…</span>{/if}
   </div>
 {/snippet}
 
 {#if inline}
-  <div class="meter inline">
+  <div class="meter inline" class:dense={progress.goal > 5}>
     <strong class="chip {progress.network} net ell" title={progress.label}>{progress.label}</strong>
     {@render dots()}
     <span class="of">{t("cadence.of", { done: progress.done, goal: progress.goal })} {period}</span>
@@ -90,23 +92,37 @@
     /* From the page's font size, so the dots grow with the large-window scale. */
     --dot: calc(var(--fs-base) * 1.05);
     flex-direction: row;
+    /* Where the three do not fit (a narrow column with a big goal) the progress text drops to a line of its own. */
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--sp-2);
+    gap: 2px var(--sp-2);
     font-size: var(--fs-sm);
   }
 
   /* Block, not the chip's inline-flex, or the ellipsis of .ell would not apply. */
   .net {
     display: block;
-    flex: 0 0 5.5rem;
+    flex: 0 0 4.5rem;
     min-width: 0;
   }
 
-  /* Wraps inside the card when the goal is large (up to 12 dots). */
+  /* Never more than six dots here (the text has the exact number), so one line is always enough. */
   .inline .dots {
-    flex: 0 1 auto;
-    flex-wrap: wrap;
-    min-width: 0;
+    flex: none;
+    flex-wrap: nowrap;
+  }
+
+  .inline .dot {
+    flex: none;
+  }
+
+  /* Six dots and the ellipsis do not fit a normal column at full size. */
+  .inline.dense {
+    --dot: calc(var(--fs-base) * 0.8);
+  }
+
+  .inline.dense .dots {
+    gap: 3px;
   }
 
   .of {

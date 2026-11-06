@@ -5,7 +5,7 @@
 //   ONLY=ideas,projects node ui/e2e/home.mjs
 import path from "node:path";
 import { finish, newPage, problems, shots } from "./harness.mjs";
-import { allPostedHome, emptyHome, fullHome, lateHome, noContentBoardHome, noPostsHome, typicalHome } from "./home-fixtures.mjs";
+import { allPostedHome, emptyHome, fullHome, lateHome, longNextHome, noContentBoardHome, noPostsHome, typicalHome } from "./home-fixtures.mjs";
 
 const only = process.env.ONLY?.split(",");
 const groups = [];
@@ -16,6 +16,26 @@ const onView = async (p, label) => (await p.locator('nav [aria-current="page"]')
 const calls = (p, cmd) => p.evaluate((cmd) => window.__calls.filter((c) => c.cmd === cmd), cmd);
 const text = (p, selector) => p.locator(selector).first().textContent({ timeout: 3000 }).catch(() => "");
 const more = (name) => `${w(name)} .more`;
+
+// Wraps a scenario so `body` can change what a command answers. `r` is the scenario's own answer.
+const layered = (base, body) => ({
+  content: `${base.content};(() => { const inner = window.__override; window.__override = (cmd, args) => { const r = inner(cmd, args); ${body}; return r; }; })();`,
+});
+// Captures the app's minute interval, and puts document.hasFocus() under the test's control.
+const withTick = (base) => ({
+  content: `${base.content};(() => {
+    const real = window.setInterval;
+    window.setInterval = (f, ms, ...a) => { if (ms === 60000) window.__tick = f; return real(f, ms, ...a); };
+    window.__focused = true;
+    document.hasFocus = () => window.__focused;
+  })();`,
+});
+// The backend's answer when midnight has passed.
+const nextDay = (p) =>
+  p.evaluate(async () => {
+    const today = await window.__TAURI_INTERNALS__.invoke("get_today", {});
+    window.__today = { ...today, date: "2026-11-04" };
+  });
 
 async function home(init, size) {
   const p = await newPage("light", { init });
@@ -88,11 +108,12 @@ group("fit", async () => {
       const c = document.querySelector("main.content");
       const widgets = [...document.querySelectorAll("[data-widget]")];
       const cols = [...new Set(widgets.map((x) => Math.round(x.getBoundingClientRect().width)))];
-      const spill = widgets.flatMap((x) => {
+      // The Brief is a card too, and the one where a deadline's title lands.
+      const spill = [...widgets, document.querySelector(".brief")].flatMap((x) => {
         const box = x.getBoundingClientRect();
         return [...x.querySelectorAll("*")]
           .filter((e) => !e.closest(".sr-only") && e.getClientRects().length && e.getBoundingClientRect().right > box.right + 0.5)
-          .map((e) => `${x.dataset.widget}: ${e.tagName}.${e.className}`);
+          .map((e) => `${x.dataset.widget ?? "brief"}: ${e.tagName}.${e.className}`);
       });
       return { y: c.scrollHeight - c.clientHeight, x: c.scrollWidth - c.clientWidth, cols, spill: spill.slice(0, 5), widgets: widgets.length };
     });
@@ -104,6 +125,21 @@ group("fit", async () => {
     expect(!m.spill.length, `${width}x${height}: text spills out of a card: ${m.spill}`);
     await p.close();
   }
+  // The next commitment is a deadline with a title that cannot break (the Brief once grew sideways).
+  for (const [width, height] of [[1280, 820], [1920, 1000], [1100, 700], [720, 480]]) {
+    const p = await home(longNextHome, { width, height });
+    const m = await p.evaluate(() => {
+      const c = document.querySelector("main.content");
+      const next = document.querySelector(".brief .next");
+      const line = parseFloat(getComputedStyle(next).lineHeight);
+      return { x: c.scrollWidth - c.clientWidth, rows: Math.round(next.getBoundingClientRect().height / line), title: next.getAttribute("title") };
+    });
+    expect(m.x <= 0, `${width}x${height}: a long deadline in the Brief overflows sideways by ${m.x}px`);
+    expect(m.rows === 1, `${width}x${height}: the next-up line takes ${m.rows} lines`);
+    expect(m.title?.includes("TituloSemEspacos"), `${width}x${height}: the next-up line has no title attribute`);
+    await p.close();
+  }
+
   const scale = await home(fullHome, { width: 1920, height: 1080 });
   const big = await scale.evaluate(() => getComputedStyle(document.querySelector(".kicker")).fontSize);
   expect(big === "13px", `large window: kicker is ${big}`);
@@ -148,6 +184,40 @@ group("post", async () => {
   expect((await onView(p, "Calendário")) && (await onTodayTab(p)), "Ver mais in Postar hoje does not open Hoje");
   await p.close();
 
+  // The publish dialog belongs to one post: the next lead must not inherit the link, or the id.
+  const nextLead = await home(typicalHome);
+  const lead2 = "01JBX3K9Q3CD";
+  const publishLead = async (pg, url) => {
+    await pg.click(`${post} button:has-text("Marcar como publicado")`);
+    if (url) await pg.fill("dialog[open] input[type=url]", url);
+    await pg.click("dialog[open] button[type=submit]");
+    await pg.waitForTimeout(100);
+  };
+  const leadPublished = (pg) =>
+    pg.evaluate(async () => {
+      const t = await window.__TAURI_INTERNALS__.invoke("get_today", {});
+      window.__today = { ...t, posts: t.posts.map((x, i) => (i === 0 ? { ...x, done: true, status: "published" } : x)) };
+      window.__emit("pauta://changed", null);
+    });
+  await publishLead(nextLead, "https://www.linkedin.com/posts/primeiro");
+  await leadPublished(nextLead);
+  await nextLead.waitForFunction(() => document.querySelector('[data-widget="post"] .lead .title')?.textContent.includes("Carrossel"));
+  await nextLead.click(`${post} button:has-text("Marcar como publicado")`);
+  expect((await nextLead.inputValue("dialog[open] input[type=url]")) === "", "the next post's dialog opens with the previous post's link");
+  await nextLead.click("dialog[open] button[type=submit]");
+  await nextLead.waitForTimeout(100);
+  const sent = (await calls(nextLead, "mark_published")).map((c) => c.args);
+  expect(sent.length === 2 && sent[1].id === lead2 && !sent[1].url, `the second publish sent ${JSON.stringify(sent[1])}`);
+  await nextLead.close();
+
+  // The lead changes while the dialog is open (MCP, an external edit): the dialog goes with it.
+  const swapped = await home(typicalHome);
+  await swapped.click(`${post} button:has-text("Marcar como publicado")`);
+  await leadPublished(swapped);
+  await swapped.waitForTimeout(200);
+  expect(!(await swapped.locator("dialog[open]").count()), "a dialog opened for one post stayed open for the next");
+  await swapped.close();
+
   const full = await home(fullHome);
   expect((await full.locator(`${post} .w-row`).count()) === 2, "Postar hoje ignores its limit");
   expect((await text(full, more("post"))).includes("+2 · Ver mais"), `Postar hoje: ${await text(full, more("post"))}`);
@@ -165,6 +235,7 @@ group("post", async () => {
 
   const done = await home(allPostedHome);
   expect(await done.locator(`${post} >> text=Tudo publicado hoje.`).count(), "no 'Tudo publicado hoje.'");
+  expect(((await done.locator(`${post} .w-row .sr-only`).first().textContent()) ?? "").includes("Publicado"), "a published row says it only with a check mark");
   await done.close();
 
   const night = await home(emptyHome);
@@ -225,6 +296,10 @@ group("agenda", async () => {
   await p.click(more("agenda"));
   await p.waitForSelector(".agenda");
   expect((await onView(p, "Calendário")) && (await p.locator("button[aria-pressed='true']:text-is('Agenda')").count()), "Ver mais in Agenda does not open the agenda view");
+  await p.keyboard.press("Alt+1");
+  await p.waitForSelector(box);
+  const kinds = await p.locator(`${box} .w-row .sr-only`).allTextContents();
+  expect(["Evento:", "Prazo:", "LinkedIn:"].every((k) => kinds.includes(k)), `agenda: no kind for screen readers: ${kinds}`);
   await p.close();
 
   const full = await home(fullHome);
@@ -239,6 +314,22 @@ group("agenda", async () => {
   const none = await home(emptyHome);
   expect(await none.locator(`${box} >> text=Nada nos próximos 7 dias.`).count(), "no empty message in Agenda");
   await none.close();
+
+  // Until the agenda arrives, and when it never does, Início does not claim the week is empty.
+  const slow = await home(layered(typicalHome, `if (cmd === "get_agenda" && window.__slowAgenda) return new Promise((res) => setTimeout(() => res(r), 500))`));
+  await slow.keyboard.press("Alt+2");
+  await slow.evaluate(() => (window.__slowAgenda = true));
+  await slow.keyboard.press("Alt+1");
+  await slow.waitForSelector(box);
+  await slow.waitForTimeout(100);
+  expect(!(await text(slow, box)).includes("Nada nos próximos"), "the agenda says it is empty while it is on its way");
+  await slow.waitForFunction((s) => document.querySelector(s).textContent.includes("Bastidores"), box, { timeout: 3000 });
+  await slow.close();
+
+  const failed = await home(layered(typicalHome, `if (cmd === "get_agenda") return Promise.reject("falha simulada")`));
+  expect(!(await text(failed, box)).includes("Nada nos próximos"), "a failed fetch makes the agenda say it is empty");
+  expect(await failed.locator(".toast.error").count(), "a failed agenda shows no error");
+  await failed.close();
 });
 
 group("rhythm", async () => {
@@ -251,17 +342,40 @@ group("rhythm", async () => {
   expect(await onView(p, "Ritmo"), "Ver mais in Ritmo does not open Ritmo");
   await p.close();
 
-  // Three networks do not fit a normal window, and a goal of 12 stays on one line.
+  // Three networks do not fit a normal window.
   const full = await home(fullHome);
   expect((await text(full, more("rhythm"))).includes("+1 · Ver mais"), `Ritmo: ${await text(full, more("rhythm"))}`);
   await full.close();
-  const roomy = await home(fullHome, { width: 1920, height: 1080 });
-  const lines = await roomy.evaluate(() => {
-    const dots = [...document.querySelectorAll('[data-widget="rhythm"] [role=img]')].pop();
-    return { tops: new Set([...dots.children].map((d) => Math.round(d.getBoundingClientRect().top))).size, dots: dots.querySelectorAll(".dot").length };
-  });
-  expect(lines.tops === 1 && lines.dots === 6, `a goal of 12: ${JSON.stringify(lines)}`);
-  await roomy.close();
+
+  // However large the goal, the dots are one line: at most six, then the ellipsis. Where the text does
+  // not fit beside them (a 1100px window has columns of 250px) it drops below, and nothing leaves the card.
+  for (const [width, height] of [[1280, 820], [1100, 700], [1920, 1080]]) {
+    const pg = await home(fullHome, { width, height });
+    const rows = await pg.evaluate(() =>
+      [...document.querySelectorAll('[data-widget="rhythm"] .meter')].map((m) => {
+        const mid = (e) => Math.round(e.getBoundingClientRect().top + e.getBoundingClientRect().height / 2);
+        const dots = [...m.querySelectorAll(".dot")];
+        const parts = [...m.querySelectorAll(".net, .dots span:not(.dot), .of"), ...dots];
+        const widget = m.closest("[data-widget]").getBoundingClientRect();
+        return {
+          dots: dots.length,
+          lines: new Set(parts.map(mid)).size,
+          dotLines: new Set([...dots, ...m.querySelectorAll(".dots span:not(.dot)")].map(mid)).size,
+          squashed: dots.some((d) => Math.abs(d.getBoundingClientRect().width - d.getBoundingClientRect().height) > 0.5),
+          spill: parts.some((e) => e.getBoundingClientRect().right > widget.right),
+        };
+      }),
+    );
+    expect(rows.length >= 2, `${width}x${height}: Ritmo shows ${rows.length} rows`);
+    expect(rows[0].dots === 6, `${width}x${height}: a goal of 12 shows ${rows[0].dots} dots`);
+    for (const [i, r] of rows.entries()) {
+      expect(r.dotLines === 1, `${width}x${height}: Ritmo row ${i}: the dots break into ${r.dotLines} lines`);
+      expect(width < 1280 || r.lines === 1, `${width}x${height}: Ritmo row ${i} breaks into ${r.lines} lines`);
+      expect(!r.squashed, `${width}x${height}: Ritmo row ${i} squashes its dots`);
+      expect(!r.spill, `${width}x${height}: Ritmo row ${i} leaves the card`);
+    }
+    await pg.close();
+  }
 
   const none = await home(emptyHome);
   expect(await none.locator(`${box} >> text=Nenhuma meta definida.`).count(), "no empty message in Ritmo");
@@ -366,12 +480,12 @@ group("projects", async () => {
 });
 
 group("return", async () => {
-  const nextDay = (p) => p.evaluate(async () => {
-    const today = await window.__TAURI_INTERNALS__.invoke("get_today", {});
-    window.__today = { ...today, date: "2026-11-04" };
-  });
   const focus = async (p) => {
     await p.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await p.waitForTimeout(200);
+  };
+  const tick = async (p) => {
+    await p.evaluate(() => window.__tick());
     await p.waitForTimeout(200);
   };
 
@@ -392,6 +506,19 @@ group("return", async () => {
   expect(await onView(fresh, "Quadros"), "the second opening of the day must keep the screen");
   await fresh.close();
 
+  // Início stays mounted across midnight: it must fetch the new week, not only a fresh mount.
+  const mounted = await home(typicalHome);
+  await nextDay(mounted);
+  await mounted.evaluate(() => {
+    window.__calls.length = 0;
+    window.dispatchEvent(new Event("focus"));
+  });
+  await mounted.waitForTimeout(300);
+  const from = await mounted.evaluate(() => window.__calls.filter((c) => c.cmd === "get_agenda").map((c) => c.args.from));
+  expect(from.length > 0 && from.every((d) => d === "2026-11-04"), `mounted Início asked for the agenda from ${from}`);
+  expect((await text(mounted, ".kicker")).includes("4 de novembro"), `the date did not change: ${await text(mounted, ".kicker")}`);
+  await mounted.close();
+
   const busy = await home(typicalHome);
   await busy.keyboard.press("Alt+2");
   await busy.click('[data-id="01JBX3K9Q2AB"]');
@@ -403,6 +530,100 @@ group("return", async () => {
   await focus(busy);
   expect(await onView(busy, "Quadros"), "the day was not marked as seen while the editor was open");
   await busy.close();
+
+  // Any open dialog counts, not only the four flags of the store: its text would be lost.
+  const dialog = await home(typicalHome);
+  await dialog.keyboard.press("Alt+2");
+  await dialog.waitForSelector("[data-id]");
+  await dialog.click('button:has-text("Novo quadro")');
+  await dialog.waitForSelector("dialog[open]");
+  await dialog.fill("dialog[open] input[type=text]", "Quadro quase pronto");
+  await nextDay(dialog);
+  await focus(dialog);
+  expect(await onView(dialog, "Quadros"), "a new day left a dialog with typed text");
+  expect(await dialog.locator("dialog[open]").count(), "a new day closed the dialog");
+  expect((await dialog.inputValue("dialog[open] input[type=text]")) === "Quadro quase pronto", "the dialog lost its text");
+  await dialog.close();
+
+  // The publish dialog on the Hoje tab: the author goes to the browser to copy the link.
+  const publish = await home(typicalHome);
+  await publish.click(more("post"));
+  await publish.waitForSelector(".today");
+  await publish.click('.today button:has-text("Marcar como publicado") >> nth=0');
+  await publish.waitForSelector("dialog[open]");
+  await publish.fill("dialog[open] input[type=url]", "https://www.linkedin.com/posts/colado");
+  await nextDay(publish);
+  await focus(publish);
+  expect((await publish.locator("dialog[open]").count()) === 1 && (await onView(publish, "Calendário")), "a new day took the author out of the publish dialog");
+  await publish.close();
+
+  // An explicit request (tray, notification) beats the return, in either order of arrival.
+  for (const order of ["focus-then-navigate", "navigate-then-focus"]) {
+    const p = await home(typicalHome);
+    await p.keyboard.press("Alt+2");
+    await nextDay(p);
+    await p.evaluate((order) => {
+      const f = () => window.dispatchEvent(new Event("focus"));
+      const n = () => window.__emit("pauta://navigate", "today");
+      if (order === "focus-then-navigate") {
+        f();
+        n();
+      } else {
+        n();
+        f();
+      }
+    }, order);
+    await p.waitForTimeout(300);
+    expect((await onView(p, "Calendário")) && (await onTodayTab(p)), `${order}: the tray's Hoje lost to the return to Início`);
+    // The day is seen, so the next opening stays where the author is.
+    await p.keyboard.press("Alt+2");
+    await focus(p);
+    expect(await onView(p, "Quadros"), `${order}: the return came back later`);
+    await p.close();
+  }
+
+  // The minute rule: whoever works across midnight is not sent home when switching windows later.
+  const across = await home(withTick(typicalHome));
+  await across.keyboard.press("Alt+2");
+  await nextDay(across);
+  await tick(across);
+  await focus(across);
+  expect(await onView(across, "Quadros"), "working across midnight, the author was sent home on the next focus");
+  await across.close();
+
+  // Without the focus the tick must not mark the day as seen: the next opening is the first one.
+  const away = await home(withTick(typicalHome));
+  await away.keyboard.press("Alt+2");
+  await away.evaluate(() => (window.__focused = false));
+  await nextDay(away);
+  await tick(away);
+  await away.evaluate(() => (window.__focused = true));
+  await focus(away);
+  expect(await onView(away, "Início"), "the tick of an unfocused window swallowed the return");
+  await away.close();
+
+  // The focus arrives while an unfocused tick is on its way.
+  const racing = await home(withTick(typicalHome));
+  await racing.keyboard.press("Alt+2");
+  await racing.evaluate(() => (window.__focused = false));
+  await nextDay(racing);
+  await racing.evaluate(() => {
+    window.__tick();
+    window.__focused = true;
+    window.dispatchEvent(new Event("focus"));
+  });
+  await racing.waitForTimeout(300);
+  expect(await onView(racing, "Início"), "a tick that began unfocused swallowed the return");
+  await racing.close();
+
+  // The window can also become visible without a focus event.
+  const visible = await home(typicalHome);
+  await visible.keyboard.press("Alt+2");
+  await nextDay(visible);
+  await visible.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await visible.waitForTimeout(300);
+  expect(await onView(visible, "Início"), "becoming visible on a new day does not return to Início");
+  await visible.close();
 });
 
 const run = groups.filter(([name]) => !only || only.includes(name));

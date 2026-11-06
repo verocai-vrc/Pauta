@@ -18,7 +18,9 @@
   const limits = $derived(tall.current ? ROOMY : NORMAL);
   const date = $derived(app.today?.date);
 
-  let agenda = $state<AgendaItem[]>([]);
+  // Null until the first answer, and after a failed fetch: the widgets read it as "no items", but only
+  // the Agenda's empty message waits for a real answer, so the screen never claims a week is empty it has not seen.
+  let agenda = $state<AgendaItem[] | null>(null);
   let request = 0;
 
   $effect(() => {
@@ -68,6 +70,8 @@
 
   .top {
     grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
   }
 
   .col {

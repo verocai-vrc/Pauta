@@ -85,6 +85,7 @@
     min-height: 24px;
     padding: 0 var(--sp-1);
     margin-left: calc(var(--sp-1) * -1);
+    border: 0;
     font-family: var(--font-serif);
     font-weight: 500;
     font-size: var(--fs-base);

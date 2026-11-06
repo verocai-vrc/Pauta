@@ -3,20 +3,23 @@
   import { hm } from "../../lib/dates";
   import { groupByDay, homeAgenda } from "../../lib/home/agenda";
   import { t } from "../../lib/i18n";
-  import { app, openItem } from "../../lib/store.svelte";
+  import { app, networkLabel, openItem } from "../../lib/store.svelte";
   import Icon from "../Icon.svelte";
   import Widget from "./Widget.svelte";
 
-  let { agenda, limit }: { agenda: AgendaItem[]; limit: number } = $props();
+  let { agenda, limit }: { agenda: AgendaItem[] | null; limit: number } = $props();
 
   const date = $derived(app.today!.date);
-  const items = $derived(homeAgenda(agenda, date));
+  const items = $derived(homeAgenda(agenda ?? [], date));
   const days = $derived(groupByDay(items.slice(0, limit), date));
 
   function more() {
     app.calendarMode = "agenda";
     app.view = "calendar";
   }
+
+  // What the mark says to the eye, in words (as the calendar does): the icon is hidden from screen readers.
+  const kindLabel = (i: AgendaItem) => (i.kind === "publication" ? networkLabel(i.network) : i.kind === "due" ? t("kind.due") : t(`event.${i.status ?? "event"}`));
 
   const netColor = (n: string | null) => (n === "linkedin" ? "var(--c-linkedin)" : n === "instagram" ? "var(--c-instagram)" : "var(--c-event)");
 
@@ -25,7 +28,9 @@
 </script>
 
 <Widget id="agenda" title={t("home.agenda")} count={items.length} hidden={Math.max(0, items.length - limit)} onmore={more}>
-  {#if items.length === 0}
+  {#if agenda === null}
+    <!-- Not here yet: saying "nothing" now would be a guess. -->
+  {:else if items.length === 0}
     <p class="muted small">{t("home.agenda_empty")}</p>
   {:else}
     {#each days as d (d.date)}
@@ -36,11 +41,12 @@
             <li>
               <button class="w-row" onclick={() => openItem(i.kind === "event" ? "event" : "card", i.id)}>
                 <span class="t">{time(i)}</span>
+                <span class="sr-only">{kindLabel(i)}:</span>
                 <span class="mark" aria-hidden="true">
                   {#if i.kind === "due"}
-                    <span style:color="var(--c-due)"><Icon name="flag" size={14} /></span>
+                    <span style:color="var(--c-due)"><Icon name="flag" size={16} /></span>
                   {:else if i.kind === "event"}
-                    <span style:color="var(--c-event)"><Icon name="diamond" size={14} /></span>
+                    <span style:color="var(--c-event)"><Icon name="diamond" size={16} /></span>
                   {:else}
                     <span class="dot" style:color={netColor(i.network)}></span>
                   {/if}
@@ -61,11 +67,11 @@
     font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--text);
-    padding: var(--sp-2) 0 2px;
+    padding: 0 0 2px;
   }
 
-  .day:first-child h3 {
-    padding-top: 0;
+  .day .w-row {
+    gap: 6px;
   }
 
   .day h3.now {

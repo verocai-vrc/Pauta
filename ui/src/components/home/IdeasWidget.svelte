@@ -41,8 +41,8 @@
 <Widget id="ideas" title={t("home.ideas")} count={ideas.length} hidden={Math.max(0, ideas.length - limit)} onmore={more}>
   {#if target}
     <form onsubmit={save}>
-      <input bind:value={text} placeholder={t("home.idea_placeholder")} aria-label={t("home.idea_placeholder")} />
-      <button type="submit" class="ghost add" aria-label={t("home.idea_add")} title={t("home.idea_add")}>
+      <input type="text" bind:value={text} placeholder={t("home.idea_placeholder")} aria-label={t("home.idea_placeholder")} />
+      <button type="submit" class="add" aria-label={t("home.idea_add")} title={t("home.idea_add")}>
         <Icon name="plus" />
       </button>
     </form>
@@ -68,19 +68,23 @@
   form {
     display: flex;
     gap: var(--sp-1);
-    align-items: center;
   }
 
+  /* The large-window scale reaches the field, which would otherwise keep the body's size. */
   input {
     flex: 1;
     min-width: 0;
+    font-size: var(--fs-md);
   }
 
+  /* The button stretches to the height of the field, and stays a square next to it. */
   .add {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    min-height: 24px;
+    flex: none;
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
   }
 </style>

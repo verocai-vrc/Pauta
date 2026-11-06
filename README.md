@@ -16,7 +16,17 @@ Tudo fica em arquivos Markdown + YAML numa pasta sua (legíveis no Obsidian, ver
 | [`docs/`](docs) | [Formato dos dados](docs/formato-dos-dados.md) e [ADRs](docs/adr) |
 | [`examples/sample-data`](examples/sample-data) | Pasta de exemplo, usada nos testes |
 
-## Pré-requisitos (Ubuntu)
+## Instalação
+
+Baixe o `.deb` da [lista de versões](https://github.com/verocai-vrc/Pauta/releases) e instale (testado no Ubuntu 26.04):
+
+```sh
+sudo apt install ./Pauta_0.1.0_amd64.deb
+```
+
+O pacote traz o app e o `pauta-mcp`. Para atualizar, instale o `.deb` da versão nova do mesmo jeito e reinicie o app e o cliente do Claude. As versões saem como pré-lançamento e viram estáveis depois de uso real ([mudanças](CHANGELOG.md)).
+
+## Compilar do código (Ubuntu)
 
 ```sh
 sudo apt install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
@@ -28,8 +38,7 @@ pnpm install
 
 ```sh
 pnpm tauri dev                    # app em modo de desenvolvimento
-pnpm tauri build                  # pacotes .deb e AppImage em target/release/bundle/
-cargo build --release -p pauta-mcp
+pnpm release:build                # .deb com o app e o pauta-mcp em target/release/bundle/deb/
 ```
 
 Na primeira execução, o app pede a pasta de dados (padrão `~/Documentos/Pauta`) e cria os quadros Conteúdo, TCC2, Dungeon Meister, Abstract-Tex e Pauta.
@@ -41,14 +50,32 @@ Na primeira execução, o app pede a pasta de dados (padrão `~/Documentos/Pauta
 A tela **Configurações → Conector MCP** mostra o comando pronto, com os caminhos certos. Para o Claude Code:
 
 ```sh
-claude mcp add --scope user pauta -- /caminho/para/pauta-mcp --root ~/Documentos/Pauta
+claude mcp add --scope user pauta -- /usr/bin/pauta-mcp --root ~/Documentos/Pauta
 ```
 
 Ferramentas (20): `pauta_today`, `pauta_rhythm`, `pauta_list_boards`, `pauta_list_cards`, `pauta_get_card`, `pauta_add_idea`, `pauta_create_card`, `pauta_update_card`, `pauta_move_card`, `pauta_schedule_post`, `pauta_find_slots`, `pauta_list_agenda`, `pauta_create_event`, `pauta_mark_published`, `pauta_record_metrics`, `pauta_request_art`, `pauta_list_art_requests`, `pauta_mark_art_ready`, `pauta_archive_card` e `pauta_duplicate_for_network`. Nenhuma exclui definitivamente nem publica, e toda escrita fica em `.pauta/log.jsonl`.
 
 Recursos (leitura, sem chamar ferramenta): `pauta://today`, `pauta://boards`, `pauta://rhythm`, `pauta://agenda`, `pauta://card/{id}` e `pauta://board/{id}`. Prompts: `draft_post_from_milestone`, `weekly_review`, `plan_posting_week`, `art_brief` e `suggest_topics` (pesquisa temas em alta, se o cliente tiver busca na web, e só cria ideias depois da sua escolha).
 
-Depois de atualizar o Pauta, recompile o binário (`cargo build --release -p pauta-mcp`) e reinicie o cliente do Claude para ver as ferramentas novas.
+Depois de atualizar o Pauta, reinicie o cliente do Claude para ver as ferramentas novas.
+
+### Dois computadores
+
+O Pauta não sincroniza sozinho: a pasta de dados é um repositório Git privado, separado deste (ADR 0010). No segundo computador, clone-a antes de abrir o app e escolha essa pasta na primeira execução:
+
+```sh
+git clone git@github.com:SEU_USUARIO/SEU_REPOSITORIO.git ~/Documentos/Pauta
+```
+
+Ao começar a usar um computador, traga as mudanças; ao terminar, envie as suas:
+
+```sh
+cd ~/Documentos/Pauta
+git pull --rebase --autostash                                        # ao começar
+git add -A && git commit -m "Atualiza dados" && git push             # ao terminar
+```
+
+Se o Git indicar conflito num cartão, ele aparece como inválido no app e nunca é regravado: corrija o arquivo, faça o commit e envie. Cada computador guarda seus próprios lembretes entregues, então os dois avisam se estiverem ligados.
 
 ### Atalhos
 
@@ -64,6 +91,13 @@ pnpm test:browser                 # cada tela em claro e escuro com axe (WCAG 2.
 pnpm tauri build --debug --no-bundle && xvfb-run -a pnpm test:e2e   # app real via tauri-driver (precisa de webkit2gtk-driver; ver abaixo)
 cargo run -p pauta-cli -- --root examples/sample-data boards
 ```
+
+### Publicar uma versão
+
+1. Atualize a versão em `Cargo.toml` e `package.json`, rode `cargo check` para atualizar o `Cargo.lock` e escreva a seção dela no `CHANGELOG.md`.
+2. Faça o commit em `main` e envie a tag: `git tag v0.2.0 && git push origin main v0.2.0`.
+3. O CI roda tudo e publica o `.deb` como pré-lançamento.
+4. Depois de usar a versão no dia a dia, marque-a como estável: `gh release edit v0.2.0 --prerelease=false --latest`.
 
 ## Identidade visual
 

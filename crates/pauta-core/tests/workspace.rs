@@ -1747,3 +1747,59 @@ fn metrics_import_rejects_unusable_files_and_flags_odd_cells() {
         .unwrap();
     assert!(p.matched.is_empty() && p.unmatched.len() == 1);
 }
+
+#[test]
+fn a_git_clone_without_empty_folders_still_works() {
+    let (dir, _, clock) = sample();
+    for d in ["calendar", "archive", ".trash", ".pauta", "boards/dungeon-meister/cards"] {
+        let _ = fs::remove_dir_all(dir.path().join(d));
+    }
+    let ws = Workspace::open(dir.path()).unwrap().with_clock(clock);
+    assert_eq!(ws.load().unwrap().events.len(), 0);
+
+    let card = ws
+        .create_card(
+            "dungeon-meister",
+            &NewCard {
+                title: "Primeira depois do clone".into(),
+                column: Some("todo".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    ws.create_event(&NewEvent {
+        title: "Prazo".into(),
+        date: "2026-12-15".into(),
+        ..Default::default()
+    })
+    .unwrap();
+    ws.archive_card(RUST_LI).unwrap();
+    ws.trash_card(&card.id).unwrap();
+
+    let index = ws.load().unwrap();
+    assert_eq!(index.events.len(), 1);
+    assert!(!index.cards.iter().any(|c| c.id == card.id));
+}
+
+#[test]
+fn git_conflict_markers_in_a_header_make_the_card_invalid_and_untouched() {
+    let (dir, ws, _) = sample();
+    let path = dir
+        .path()
+        .join("boards/conteudo/cards/por-que-rust-nao-tem-coletor-de-lixo--k9q2ab.md");
+    let text = fs::read_to_string(&path).unwrap();
+    let conflicted = text.replacen(
+        "title: \"Por que Rust não tem coletor de lixo\"\n",
+        "<<<<<<< HEAD\ntitle: \"Aqui\"\n=======\ntitle: \"No outro computador\"\n>>>>>>> 1a2b3c4\n",
+        1,
+    );
+    assert_ne!(conflicted, text);
+    fs::write(&path, &conflicted).unwrap();
+
+    let index = ws.load().unwrap();
+    assert!(!index.cards.iter().any(|c| c.id == RUST_LI));
+    assert!(index.invalid.iter().any(|f| f.path == path), "{:?}", index.invalid);
+
+    ws.move_card(RUST_IG, "idea", Some(0)).unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), conflicted);
+}

@@ -1751,7 +1751,13 @@ fn metrics_import_rejects_unusable_files_and_flags_odd_cells() {
 #[test]
 fn a_git_clone_without_empty_folders_still_works() {
     let (dir, _, clock) = sample();
-    for d in ["calendar", "archive", ".trash", ".pauta", "boards/dungeon-meister/cards"] {
+    for d in [
+        "calendar",
+        "archive",
+        ".trash",
+        ".pauta",
+        "boards/dungeon-meister/cards",
+    ] {
         let _ = fs::remove_dir_all(dir.path().join(d));
     }
     let ws = Workspace::open(dir.path()).unwrap().with_clock(clock);

@@ -16,7 +16,8 @@ jobs:
   release:
     needs: ci
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # A cold build takes about 15 minutes, and a slow apt mirror once added 20 more.
+    timeout-minutes: 60
     permissions:
       contents: write
     env:
@@ -69,8 +70,9 @@ jobs:
       - name: The package must hold the app and the MCP server
         run: |
           deb="target/release/bundle/deb/Pauta_${VERSION}_amd64.deb"
-          dpkg-deb -c "$deb" | grep -q '/usr/bin/pauta$'
-          dpkg-deb -c "$deb" | grep -q '/usr/bin/pauta-mcp$'
+          dpkg-deb -c "$deb" > contents.txt
+          grep -Eq ' \.?/?usr/bin/pauta$' contents.txt
+          grep -Eq ' \.?/?usr/bin/pauta-mcp$' contents.txt
 
       - name: Publish
         env:
